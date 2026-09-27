@@ -1,0 +1,31 @@
+# ==============================================================================
+# Database Configuration (JDBC & HikariCP)
+# ==============================================================================
+db.url=jdbc:mysql://localhost:3306/train_ticket_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+db.username=root
+db.password=your_password_here
+db.driver=com.mysql.cj.jdbc.Driver
+
+# HikariCP Pool Configuration
+db.pool.maximum-size=10
+db.pool.minimum-idle=2
+db.pool.idle-timeout=30000
+db.pool.connection-timeout=30000
+db.pool.max-lifetime=1800000
+
+# ==============================================================================
+# Application & UI Preferences
+# ==============================================================================
+app.name=RailFlow - Train Ticket Management
+app.version=1.0.0
+app.theme=dark
+app.window.width=1280
+app.window.height=800
+app.window.min-width=1024
+app.window.min-height=680
+
+# Animation & Performance
+app.animation.target-fps=60
+app.animation.enable-jelly-effects=true
+app.animation.spring-damping=0.65
+app.animation.spring-stiffness=180.0
