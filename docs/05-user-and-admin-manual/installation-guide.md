@@ -8,9 +8,9 @@
 - **Hardware**: Dual-Core 2.0 GHz+, 4GB RAM minimum (8GB recommended), 500MB free disk space.
 - **Display**: Minimum resolution $1024 \times 768$ (Full HD $1920 \times 1080$ recommended for high DPI).
 - **Software**:
-  - JDK 21 (OpenJDK, Temurin, or Oracle JDK).
+  - JDK 17 LTS or JDK 21 LTS (OpenJDK, Temurin, or Oracle JDK).
   - MySQL Server 8.0+ or compatible ANSI SQL database.
-  - Apache Maven 3.8+.
+  - Apache Maven 3.8+ (e.g. installed via `brew install maven`).
 
 ---
 
@@ -33,20 +33,23 @@
    ```
 2. Open `src/main/resources/application.properties` and verify your MySQL port, username, and password.
 
-### Step 3: Build & Package
-To compile and assemble the executable JAR with all dependencies bundled:
+### Step 3: Run the Application
+You can run the application using any of the following methods:
+
+#### Method A: From Terminal via Maven
 ```bash
-mvn clean package
+mvn clean compile exec:java
 ```
-This produces the runnable jar inside the `target/` directory:
-`target/train-ticket-management-1.0.0-SNAPSHOT.jar`
 
-### Step 4: Run Application
-Execute directly via Java or Maven:
+#### Method B: Directly in Your IDE (VS Code / IntelliJ)
+Open `src/main/java/com/trainticket/Main.java` and click the **Run ▶** button above `public static void main(String[] args)`.
+
+#### Method C: Via Compiled Executable (.jar)
 ```bash
-# Via Maven
-mvn exec:java
+# Compile and assemble standalone fat JAR
+mvn clean package
 
-# Via Compiled Fat JAR
+# Run the packaged JAR
 java -jar target/train-ticket-management-1.0.0-SNAPSHOT.jar
 ```
+
