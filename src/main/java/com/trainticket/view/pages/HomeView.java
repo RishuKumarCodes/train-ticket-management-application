@@ -1,25 +1,42 @@
 package com.trainticket.view.pages;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.trainticket.view.component.VideoBackgroundPanel;
+import com.trainticket.view.component.home.FeaturedDestinationsSection;
+import com.trainticket.view.component.home.HeroSection;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.plaf.basic.BasicScrollBarUI;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 
 /**
- * Initial landing view for RailFlow.
- * Displays the minimalist hero banner, the core 24px pill train search card,
- * and quick-access utility shortcuts.
+ * Modern Hero landing view for RailFlow inspired by scenic travel aesthetics.
+ * <p>
+ * Orchestrates:
+ * <ul>
+ *   <li>{@link HeroSection}: Colossal animated headline and search capsule bar</li>
+ *   <li>{@link FeaturedDestinationsSection}: White sheet with watermarked header & cards grid</li>
+ *   <li>Smart Occlusion Culling: Pauses background video when scrolled into destinations</li>
+ * </ul>
  */
 public class HomeView extends JPanel {
 
-    private JTextField fromField;
-    private JTextField toField;
-    private JTextField dateField;
-    private JComboBox<String> classDropdown;
-    private JButton searchButton;
+    private HeroSection heroSection;
+    private FeaturedDestinationsSection destinationsSection;
+    private JScrollPane scrollPane;
+    private javax.swing.Timer scrollAnimTimer;
 
     public HomeView() {
         setLayout(new BorderLayout());
@@ -28,196 +45,153 @@ public class HomeView extends JPanel {
     }
 
     private void initComponents() {
-        // Centered container with bottom alignment
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setOpaque(false);
-        contentPanel.setBorder(new EmptyBorder(0, 48, 36, 48));
+        JPanel scrollContent = new JPanel();
+        scrollContent.setLayout(new BoxLayout(scrollContent, BoxLayout.Y_AXIS));
+        scrollContent.setOpaque(false);
 
-        // Push everything down so the booking card and titles align at the bottom
-        contentPanel.add(Box.createVerticalGlue());
+        // 1. Hero Section (full viewport height, contains title, subtitle, search capsule)
+        heroSection = new HeroSection();
+        scrollContent.add(heroSection);
 
-        // 1. Hero Title & Subtitle with soft drop shadow for video legibility
-        JLabel heroTitle = new JLabel("Find & Book Train Tickets") {
+        // 2. Featured Destinations Section (scrolls up below hero, white sheet with watermark header)
+        destinationsSection = new FeaturedDestinationsSection();
+        scrollContent.add(destinationsSection);
+
+        // Modern Transparent ScrollPane
+        scrollPane = new JScrollPane(scrollContent);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(null);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(24);
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+        scrollPane.putClientProperty(FlatClientProperties.SCROLL_BAR_SHOW_BUTTONS, false);
+
+        // Sleek Mac-style overlay scrollbar UI
+        scrollPane.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
             @Override
-            protected void paintComponent(Graphics g) {
+            protected JButton createDecreaseButton(int orientation) {
+                JButton btn = new JButton();
+                btn.setPreferredSize(new Dimension(0, 0));
+                return btn;
+            }
+
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                JButton btn = new JButton();
+                btn.setPreferredSize(new Dimension(0, 0));
+                return btn;
+            }
+
+            @Override
+            protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+                // Fully transparent track
+            }
+
+            @Override
+            protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                if (thumbBounds.isEmpty() || !scrollbar.isEnabled()) {
+                    return;
+                }
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-                FontMetrics fm = g2.getFontMetrics(getFont());
-                int x = (getWidth() - fm.stringWidth(getText())) / 2;
-                int y = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
-
-                g2.setFont(getFont());
-                g2.setColor(new Color(0, 0, 0, 160));
-                g2.drawString(getText(), x + 1, y + 2);
-                g2.drawString(getText(), x + 2, y + 2);
-
-                g2.setColor(getForeground());
-                g2.drawString(getText(), x, y);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color thumbColor = isThumbRollover()
+                        ? new Color(100, 116, 139, 180)
+                        : new Color(148, 163, 184, 130);
+                g2.setColor(thumbColor);
+                g2.fillRoundRect(thumbBounds.x + 1, thumbBounds.y, thumbBounds.width - 2, thumbBounds.height, 6, 6);
                 g2.dispose();
             }
-        };
-        heroTitle.setFont(new Font("Inter", Font.BOLD, 36));
-        heroTitle.setForeground(new Color(255, 255, 255));
-        heroTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        contentPanel.add(heroTitle);
+        });
 
-        contentPanel.add(Box.createVerticalStrut(10));
-        JLabel heroSubtitle = new JLabel("Real-time seat availability, live schedules, and instant PNR reservations") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-                FontMetrics fm = g2.getFontMetrics(getFont());
-                int x = (getWidth() - fm.stringWidth(getText())) / 2;
-                int y = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
-
-                g2.setFont(getFont());
-                g2.setColor(new Color(0, 0, 0, 160));
-                g2.drawString(getText(), x + 1, y + 1);
-
-                g2.setColor(getForeground());
-                g2.drawString(getText(), x, y);
-                g2.dispose();
+        // Smart Occlusion Culling: Pause background video when scrolled down into destinations
+        scrollPane.getViewport().addChangeListener(e -> {
+            if (heroSection != null && VideoBackgroundPanel.getInstance() != null) {
+                int scrollY = scrollPane.getVerticalScrollBar().getValue();
+                int heroH = heroSection.getHeight();
+                if (heroH > 0) {
+                    if (scrollY > heroH * 0.70) {
+                        VideoBackgroundPanel.getInstance().pauseVideo();
+                    } else {
+                        VideoBackgroundPanel.getInstance().resumeVideo();
+                    }
+                }
             }
-        };
-        heroSubtitle.setFont(new Font("Inter", Font.PLAIN, 15));
-        heroSubtitle.setForeground(new Color(241, 245, 249));
-        heroSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        contentPanel.add(heroSubtitle);
+        });
 
-        contentPanel.add(Box.createVerticalStrut(24));
-
-        // 2. Main Search Card (Anchored at the bottom)
-        JPanel searchCard = createSearchCard();
-        searchCard.setAlignmentX(Component.CENTER_ALIGNMENT);
-        contentPanel.add(searchCard);
-
-        add(contentPanel, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
     }
 
-    private JPanel createSearchCard() {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setOpaque(false);
-        card.setMaximumSize(new Dimension(960, 220));
-        card.setPreferredSize(new Dimension(960, 200));
+    /**
+     * Smoothly scrolls the viewport to the target vertical pixel offset.
+     */
+    public void smoothScrollTo(int targetY) {
+        if (scrollPane == null) {
+            return;
+        }
+        JScrollBar vBar = scrollPane.getVerticalScrollBar();
+        if (vBar == null) {
+            return;
+        }
 
-        // Modern White Card with 24px border radius and soft ambient border
-        card.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 24;" +
-            "background: #FFFFFF;"
-        );
-        card.setBorder(BorderFactory.createCompoundBorder(
-            new com.formdev.flatlaf.ui.FlatLineBorder(new Insets(1, 1, 1, 1), new Color(0, 0, 0, 30), 1, 24),
-            new EmptyBorder(26, 32, 26, 32)
-        ));
+        if (scrollAnimTimer != null && scrollAnimTimer.isRunning()) {
+            scrollAnimTimer.stop();
+        }
 
-        // Row 1: Input Fields
-        JPanel inputRow = new JPanel(new GridLayout(1, 4, 16, 0));
-        inputRow.setOpaque(false);
+        int startY = vBar.getValue();
+        if (startY == targetY) {
+            return;
+        }
 
-        // Origin Field
-        fromField = new JTextField();
-        fromField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "From: Station or City");
-        fromField.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "margin: 9,16,9,16;" +
-            "background: #F1F5F9;" +
-            "foreground: #0F172A;" +
-            "caretColor: #FA5909;" +
-            "placeholderForeground: #94A3B8;" +
-            "borderWidth: 1;" +
-            "borderColor: #E2E8F0;"
-        );
-        fromField.setFont(new Font("Inter", Font.PLAIN, 14));
+        final long startTime = System.currentTimeMillis();
+        final int duration = 380;
 
-        // Destination Field
-        toField = new JTextField();
-        toField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "To: Station or City");
-        toField.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "margin: 9,16,9,16;" +
-            "background: #F1F5F9;" +
-            "foreground: #0F172A;" +
-            "caretColor: #FA5909;" +
-            "placeholderForeground: #94A3B8;" +
-            "borderWidth: 1;" +
-            "borderColor: #E2E8F0;"
-        );
-        toField.setFont(new Font("Inter", Font.PLAIN, 14));
+        scrollAnimTimer = new javax.swing.Timer(16, e -> {
+            long elapsed = System.currentTimeMillis() - startTime;
+            float progress = Math.min(1.0f, (float) elapsed / duration);
+            float ease = 1.0f - (float) Math.pow(1.0f - progress, 3);
+            int currentY = Math.round(startY + (targetY - startY) * ease);
+            vBar.setValue(currentY);
 
-        // Journey Date Field
-        dateField = new JTextField();
-        dateField.setText(LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        dateField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "YYYY-MM-DD");
-        dateField.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "margin: 9,16,9,16;" +
-            "background: #F1F5F9;" +
-            "foreground: #0F172A;" +
-            "caretColor: #FA5909;" +
-            "placeholderForeground: #94A3B8;" +
-            "borderWidth: 1;" +
-            "borderColor: #E2E8F0;"
-        );
-        dateField.setFont(new Font("Inter", Font.PLAIN, 14));
+            if (progress >= 1.0f) {
+                ((javax.swing.Timer) e.getSource()).stop();
+            }
+        });
+        scrollAnimTimer.start();
+    }
 
-        // Class Selection
-        String[] classes = {"All Classes", "1A - AC First Class", "2A - AC 2 Tier", "3A - AC 3 Tier", "SL - Sleeper", "CC - Chair Car"};
-        classDropdown = new JComboBox<>(classes);
-        classDropdown.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "background: #F1F5F9;" +
-            "foreground: #0F172A;" +
-            "borderWidth: 1;" +
-            "borderColor: #E2E8F0;"
-        );
-        classDropdown.setFont(new Font("Inter", Font.PLAIN, 13));
+    // --- Public Getters Delegating to Subcomponents ---
 
-        inputRow.add(fromField);
-        inputRow.add(toField);
-        inputRow.add(dateField);
-        inputRow.add(classDropdown);
+    public HeroSection getHeroSection() {
+        return heroSection;
+    }
 
-        card.add(inputRow);
-        card.add(Box.createVerticalStrut(20));
+    public FeaturedDestinationsSection getDestinationsSection() {
+        return destinationsSection;
+    }
 
-        // Row 2: Search Action Pill Button
-        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        actionRow.setOpaque(false);
-
-        searchButton = new JButton("Search Trains");
-        searchButton.setFont(new Font("Inter", Font.BOLD, 14));
-        searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        searchButton.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "background: #FA5909;" +
-            "hoverBackground: #E04D05;" +
-            "foreground: #FFFFFF;" +
-            "borderWidth: 0;" +
-            "margin: 10,32,10,32;"
-        );
-        actionRow.add(searchButton);
-
-        card.add(actionRow);
-
-        return card;
+    public JScrollPane getScrollPane() {
+        return scrollPane;
     }
 
     public JButton getSearchButton() {
-        return searchButton;
+        return heroSection != null ? heroSection.getSearchButton() : null;
     }
 
     public String getFromStation() {
-        return fromField.getText().trim();
+        return heroSection != null ? heroSection.getFromStation() : "";
     }
 
     public String getToStation() {
-        return toField.getText().trim();
+        return heroSection != null ? heroSection.getToStation() : "";
     }
 
     public String getJourneyDate() {
-        return dateField.getText().trim();
+        return heroSection != null ? heroSection.getJourneyDate() : "";
+    }
+
+    public String getSelectedClass() {
+        return heroSection != null ? heroSection.getSelectedClass() : "All Classes";
     }
 }

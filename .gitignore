@@ -1,13 +1,13 @@
-# Compiled class file
+# Compiled class files
 *.class
 
-# Log file
+# Log files & diagnostics
 *.log
+hs_err_pid*
+replay_pid*
+*.hprof
 
-# BlueJ files
-*.pkg
-
-# Package Files #
+# Package Files & Archives
 *.jar
 *.war
 *.nar
@@ -43,12 +43,28 @@ out/
 .vscode/
 *.code-workspace
 
-# Eclipse
+# Eclipse & Dev tools
 .project
 .classpath
+.classpath.txt
 .settings/
 
-# OS generated files
+# BlueJ & NetBeans
+*.pkg
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Editor swap & backup files
+*.swp
+*.swo
+*~
+
+# Operating System files
 .DS_Store
 .DS_Store?
 ._*
@@ -56,8 +72,19 @@ out/
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# Application runtime configs / secrets
+# Local database & cache files
+*.db
+*.sqlite
+*.sqlite3
+
+# Application runtime configs & secrets
 application.properties
-application-local.properties
+application-*.properties
+!application.properties.example
+!src/main/resources/application.properties.example
+.env
+.env.*
 *.env

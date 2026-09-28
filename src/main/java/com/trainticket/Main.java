@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import java.awt.RenderingHints;
 
 /**
  * Main application entry point for RailFlow.
@@ -26,16 +25,18 @@ public class Main {
         System.setProperty("apple.awt.application.name", "RailFlow");
         System.setProperty("apple.awt.application.appearance", "system");
 
-        // 2. Initialize Modern FlatLaf Dark Theme
+        // 2. Pre-load Application Fonts & Initialize FlatLaf Dark Theme
         try {
+            com.trainticket.util.AssetManager.loadApplicationFonts();
+            UIManager.put("defaultFont", com.trainticket.util.AssetManager.getFont("Roboto", java.awt.Font.PLAIN, 13f));
             FlatDarkLaf.setup();
             
-            // Set global font anti-aliasing hints
+            // Set global component styling hints
             UIManager.put("Component.arrowType", "chevron");
             UIManager.put("ScrollBar.thumbArc", 999);
             UIManager.put("ScrollBar.thumbInsets", new java.awt.Insets(2, 2, 2, 2));
             
-            logger.info("FlatLaf Dark Theme initialized successfully.");
+            logger.info("FlatLaf Dark Theme initialized with Roboto default font.");
         } catch (Exception ex) {
             logger.error("Failed to initialize FlatLaf look and feel: {}", ex.getMessage(), ex);
         }

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -27,14 +28,14 @@ public class MainFrame extends JFrame {
 
     private static final Logger logger = LoggerFactory.getLogger(MainFrame.class);
     private static final String APP_ICON_PATH = "/assets/icons/icon.png";
-    private static final String APP_WIDE_ICON_PATH = "/assets/icons/icon-wide.png";
+    private static final String APP_WIDE_ICON_PATH = "/assets/icons/icon-wide-white.png";
 
     private JPanel contentContainer;
     private HomeView homeView;
     private VideoBackgroundPanel videoBackgroundPanel;
 
     public MainFrame() {
-        super("RailFlow — Train Ticket Management");
+        super("");
         initWindow();
         initAppIcon();
         initComponents();
@@ -45,6 +46,16 @@ public class MainFrame extends JFrame {
         setSize(1280, 820);
         setMinimumSize(new Dimension(1024, 680));
         setLocationRelativeTo(null); // Center on screen
+
+        // Enable cross-platform full-window content so video background extends to the very top edge
+        JRootPane root = getRootPane();
+        root.putClientProperty(FlatClientProperties.FULL_WINDOW_CONTENT, true);
+        root.putClientProperty(FlatClientProperties.USE_WINDOW_DECORATIONS, true);
+        root.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_TITLE, false);
+        root.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICON, false);
+        root.putClientProperty("apple.awt.fullWindowContent", true);
+        root.putClientProperty("apple.awt.transparentTitleBar", true);
+        root.putClientProperty("apple.awt.windowTitleVisible", false);
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -70,6 +81,27 @@ public class MainFrame extends JFrame {
                 }
                 AudioManager.resume();
             }
+        });
+
+        // In-app live reload shortcut (Cmd+R on Mac, Ctrl+R on Windows/Linux, or F5)
+        KeyStroke cmdR = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        KeyStroke f5 = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0);
+        getRootPane().registerKeyboardAction(e -> reloadCurrentView(), cmdR, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        getRootPane().registerKeyboardAction(e -> reloadCurrentView(), f5, JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
+    /**
+     * Hot-reloads the active page view without restarting the application.
+     */
+    public void reloadCurrentView() {
+        SwingUtilities.invokeLater(() -> {
+            logger.info("Hot-reloading UI view on user shortcut (Cmd/Ctrl + R)...");
+            contentContainer.removeAll();
+            homeView = new HomeView();
+            contentContainer.add(homeView, "HOME");
+            contentContainer.revalidate();
+            contentContainer.repaint();
+            logger.info("UI view hot-reloaded successfully.");
         });
     }
 
@@ -168,134 +200,435 @@ public class MainFrame extends JFrame {
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        header.setBorder(new EmptyBorder(18, 32, 28, 32));
+        header.setBorder(new EmptyBorder(36, 48, 16, 48));
+        header.putClientProperty(FlatClientProperties.COMPONENT_TITLE_BAR_CAPTION, true);
 
-        // Brand & Logo Left - Uses icon-wide.png for heading
-        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        // 1. Brand Logo Left (icon-wide-white.png) + Circular White Music Toggle Button
+        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
         brandPanel.setOpaque(false);
 
         Image wideIcon = AssetManager.getImage(APP_WIDE_ICON_PATH);
         if (wideIcon != null) {
-            // Aspect ratio of icon-wide.png is 2000x400 (5:1) -> 175x35
-            int logoHeight = 35;
+            // Aspect ratio of icon-wide-white.png is 2000x400 (5:1) -> 180x36
+            int logoHeight = 36;
             int logoWidth = logoHeight * 5;
-            Image scaledLogo = wideIcon.getScaledInstance(logoWidth, logoHeight, Image.SCALE_SMOOTH);
-            JLabel logoLabel = new JLabel(new ImageIcon(scaledLogo));
-            logoLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            brandPanel.add(logoLabel);
+            JComponent logoComp = new JComponent() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                    g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                    g2.drawImage(wideIcon, 0, 0, getWidth(), getHeight(), null);
+                    g2.dispose();
+                }
+            };
+            logoComp.setPreferredSize(new Dimension(logoWidth, logoHeight));
+            logoComp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            brandPanel.add(logoComp);
         } else {
-            JLabel titleLabel = new JLabel("RailFlow");
-            titleLabel.setFont(new Font("Inter", Font.BOLD, 22));
-            titleLabel.setForeground(new Color(248, 250, 252));
-            brandPanel.add(titleLabel);
+            JLabel brandTitle = new JLabel("RAILFLOW");
+            brandTitle.setFont(AssetManager.getFont("Roboto", Font.BOLD, 20f));
+            brandTitle.setForeground(Color.WHITE);
+            brandTitle.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            brandPanel.add(brandTitle);
         }
 
-        header.add(brandPanel, BorderLayout.WEST);
+        // Ambient Audio Toggle Button with White Circular Background & Music Note Icons
+        FlatSVGIcon musicOnIcon = new FlatSVGIcon("assets/icons/music.svg", 20, 20);
+        FlatSVGIcon musicCutIcon = new FlatSVGIcon("assets/icons/music-cut.svg", 20, 20);
 
-        // Navigation Navigation Pills (Center)
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-        navPanel.setOpaque(false);
+        JButton musicBtn = new JButton(musicCutIcon) {
+            private boolean isHovered = false;
+            private boolean isPressed = false;
 
-        JButton bookBtn = createNavPill("Book Journey", true);
-        JButton pnrBtn = createNavPill("PNR Status", false);
-        JButton scheduleBtn = createNavPill("Train Schedule", false);
-        JButton adminBtn = createNavPill("Admin", false);
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) { isHovered = true; repaint(); }
+                    @Override
+                    public void mouseExited(MouseEvent e) { isHovered = false; repaint(); }
+                    @Override
+                    public void mousePressed(MouseEvent e) { isPressed = true; repaint(); }
+                    @Override
+                    public void mouseReleased(MouseEvent e) { isPressed = false; repaint(); }
+                });
+            }
 
-        navPanel.add(bookBtn);
-        navPanel.add(pnrBtn);
-        navPanel.add(scheduleBtn);
-        navPanel.add(adminBtn);
+            @Override
+            protected void paintComponent(Graphics g) {
+                int w = getWidth();
+                int h = getHeight();
+                boolean playing = AudioManager.isPlaying();
 
-        header.add(navPanel, BorderLayout.CENTER);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Right Action Profile Pill & Ambient Audio Toggle
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
-        rightPanel.setOpaque(false);
+                if (isPressed) {
+                    g2.translate(w * 0.02, h * 0.02);
+                    g2.scale(0.96, 0.96);
+                }
 
-        // Ambient Audio Toggle Button
-        FlatSVGIcon speakerOffIcon = new FlatSVGIcon("assets/icons/speaker-off.svg", 18, 18);
-        FlatSVGIcon speakerOnIcon = new FlatSVGIcon("assets/icons/speaker-on.svg", 18, 18);
+                if (!playing) {
+                    // MUSIC OFF: Solid white circular pill + subtle drop shadow
+                    g2.setColor(new Color(0, 0, 0, 22));
+                    g2.fillOval(1, 2, w - 2, h - 2);
 
-        JButton speakerBtn = new JButton(speakerOffIcon);
-        speakerBtn.setToolTipText("Play ambient journey sound");
-        speakerBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        speakerBtn.setContentAreaFilled(false);
-        speakerBtn.setBorderPainted(false);
-        speakerBtn.setFocusPainted(false);
-        speakerBtn.putClientProperty(FlatClientProperties.STYLE, "background: #00000000; foreground: #F1F5F9; hoverForeground: #FA5909; borderWidth: 0;");
+                    g2.setColor(isHovered ? new Color(241, 245, 249) : Color.WHITE);
+                    g2.fillOval(0, 0, w, h);
+                } else {
+                    // MUSIC ON: Dark black smoked glass with live backdrop blur (matching navCapsule)
+                    g2.setColor(new Color(0, 0, 0, 45));
+                    g2.fillOval(0, 2, w, h);
 
-        speakerBtn.addActionListener(e -> {
+                    // Translucent dark glass fill matching navCapsule (rgba(15, 23, 42, 60))
+                    g2.setColor(isHovered ? new Color(15, 23, 42, 100) : new Color(15, 23, 42, 60));
+                    g2.fillOval(0, 0, w, h);
+
+                    if (isHovered) {
+                        g2.setColor(new Color(255, 255, 255, 25));
+                        g2.fillOval(1, 1, w - 2, h - 2);
+                    }
+                }
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        musicBtn.setPreferredSize(new Dimension(42, 42));
+        musicBtn.setContentAreaFilled(false);
+        musicBtn.setBorderPainted(false);
+        musicBtn.setFocusPainted(false);
+        musicBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        boolean isMusicPlaying = AudioManager.isPlaying();
+        if (isMusicPlaying) {
+            musicBtn.setIcon(musicOnIcon);
+            String dev = AudioManager.getActiveDeviceName();
+            musicBtn.setToolTipText("Mute ambient sound (" + dev + ") • Right-click to switch device");
+        } else {
+            musicBtn.setIcon(musicCutIcon);
+            musicBtn.setToolTipText("Play ambient journey sound • Right-click to switch device");
+        }
+
+        musicBtn.addActionListener(e -> {
             AudioManager.toggleAmbientSound(isPlaying -> {
                 String dev = AudioManager.getActiveDeviceName();
                 if (isPlaying) {
-                    speakerBtn.setIcon(speakerOnIcon);
-                    speakerBtn.setToolTipText("Mute ambient sound (" + dev + ") • Right-click to switch device");
-                    speakerBtn.putClientProperty(FlatClientProperties.STYLE, "background: #00000000; foreground: #FA5909; hoverForeground: #E04D05; borderWidth: 0;");
+                    musicBtn.setIcon(musicOnIcon);
+                    musicBtn.setToolTipText("Mute ambient sound (" + dev + ") • Right-click to switch device");
                 } else {
-                    speakerBtn.setIcon(speakerOffIcon);
-                    speakerBtn.setToolTipText("Play ambient journey sound • Right-click to switch device");
-                    speakerBtn.putClientProperty(FlatClientProperties.STYLE, "background: #00000000; foreground: #F1F5F9; hoverForeground: #FA5909; borderWidth: 0;");
+                    musicBtn.setIcon(musicCutIcon);
+                    musicBtn.setToolTipText("Play ambient journey sound • Right-click to switch device");
                 }
+                musicBtn.repaint();
             });
         });
 
-        // Right-click context menu to manually select audio output hardware if desired
-        speakerBtn.addMouseListener(new MouseAdapter() {
+        // Right-click context menu for audio output hardware
+        musicBtn.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger()) {
-                    showAudioDevicePopup(speakerBtn, e.getX(), e.getY());
+                    showAudioDevicePopup(musicBtn, e.getX(), e.getY());
                 }
             }
-
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (e.isPopupTrigger()) {
-                    showAudioDevicePopup(speakerBtn, e.getX(), e.getY());
+                    showAudioDevicePopup(musicBtn, e.getX(), e.getY());
                 }
             }
         });
+        brandPanel.add(musicBtn);
 
-        rightPanel.add(speakerBtn);
+        header.add(brandPanel, BorderLayout.WEST);
 
-        JButton accountBtn = new JButton("My Account");
-        accountBtn.setFont(new Font("Inter", Font.PLAIN, 13));
-        accountBtn.setContentAreaFilled(false);
-        accountBtn.setBorderPainted(false);
-        accountBtn.setFocusPainted(false);
-        accountBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        accountBtn.putClientProperty(FlatClientProperties.STYLE, "background: #00000000; foreground: #F1F5F9; hoverForeground: #FFFFFF; borderWidth: 0;");
-        rightPanel.add(accountBtn);
+        // 2. Navigation Capsule (Center) - Floating Frosted Glass Pill with Real Backdrop Blur
+        JPanel navCenterWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        navCenterWrapper.setOpaque(false);
+
+        JPanel navCapsule = new JPanel() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                return new Dimension(d.width, 42);
+            }
+
+            @Override
+            public Dimension getMaximumSize() {
+                return getPreferredSize();
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                int w = getWidth();
+                int h = getHeight();
+
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Soft ambient drop shadow
+                g2.setColor(new Color(0, 0, 0, 45));
+                g2.fillRoundRect(0, 2, w, h, h, h);
+
+                // Decreased opacity translucent black glass fill (no border)
+                g2.setColor(new Color(15, 23, 42, 60));
+                g2.fillRoundRect(0, 0, w, h, h, h);
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        navCapsule.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        navCapsule.setOpaque(false);
+        navCapsule.setBorder(new EmptyBorder(0, 0, 0, 8));
+
+        // Active "Book Journey" Pill: Solid White Button with Dark Typography (42px height, flush fit)
+        JButton bookBtn = new JButton("Book Journey") {
+            private boolean isHovered = false;
+
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) { isHovered = true; repaint(); }
+                    @Override
+                    public void mouseExited(MouseEvent e) { isHovered = false; repaint(); }
+                });
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                // Solid White Pill Body
+                g2.setColor(isHovered ? new Color(241, 245, 249) : Color.WHITE);
+                g2.fillRoundRect(0, 0, w, h, h, h);
+
+                // Dark Typography
+                g2.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
+                g2.setColor(new Color(15, 23, 42));
+                FontMetrics fm = g2.getFontMetrics();
+                String text = "Book Journey";
+                int tx = (w - fm.stringWidth(text)) / 2;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(text, tx, ty);
+
+                g2.dispose();
+            }
+        };
+        bookBtn.setPreferredSize(new Dimension(132, 42));
+        bookBtn.setContentAreaFilled(false);
+        bookBtn.setBorderPainted(false);
+        bookBtn.setFocusPainted(false);
+        bookBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        navCapsule.add(bookBtn);
+
+        // "PNR Status" pill
+        JButton pnrBtn = createTranslucentNavPill("PNR Status");
+        pnrBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+            "PNR Status & Live Tracking\nEnter your 10-digit PNR to retrieve booking status.",
+            "PNR Status", JOptionPane.INFORMATION_MESSAGE));
+        navCapsule.add(pnrBtn);
+
+        // "Train Schedule" pill
+        JButton scheduleBtn = createTranslucentNavPill("Train Schedule");
+        scheduleBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+            "Train Rosters & Timetable\nBrowse route schedules and platform halts.",
+            "Train Schedule", JOptionPane.INFORMATION_MESSAGE));
+        navCapsule.add(scheduleBtn);
+
+        navCenterWrapper.add(navCapsule);
+        header.add(navCenterWrapper, BorderLayout.CENTER);
+
+        // 3. Right Action Panel ("Plan My Trip" + "Login" Pills)
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
+        rightPanel.setOpaque(false);
+
+        // "Plan My Trip ↗" Pill Button (to the left of Login button)
+        JButton planTripBtn = new JButton() {
+            private boolean isHovered = false;
+
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        isHovered = true;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        isHovered = false;
+                        repaint();
+                    }
+                });
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                // Solid White Pill Body
+                g2.setColor(isHovered ? new Color(241, 245, 249) : Color.WHITE);
+                g2.fillRoundRect(0, 0, w, h, h, h);
+
+                // Button Text: "Plan My Trip"
+                String text = "Plan My Trip";
+                g2.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
+                g2.setColor(new Color(15, 23, 42));
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = 18;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(text, tx, ty);
+
+                // Circular Brand-Orange Arrow Badge (#FA5909)
+                int badgeSize = 30;
+                int badgeX = w - badgeSize - 6;
+                int badgeY = (h - badgeSize) / 2;
+                g2.setColor(new Color(250, 89, 9));
+                g2.fillOval(badgeX, badgeY, badgeSize, badgeSize);
+
+                // White Diagonal Arrow ↗
+                int cx = badgeX + badgeSize / 2;
+                int cy = badgeY + badgeSize / 2;
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(cx - 4, cy + 4, cx + 4, cy - 4);
+                g2.drawLine(cx, cy - 4, cx + 4, cy - 4);
+                g2.drawLine(cx + 4, cy, cx + 4, cy - 4);
+
+                g2.dispose();
+            }
+        };
+        planTripBtn.setPreferredSize(new Dimension(160, 42));
+        planTripBtn.setContentAreaFilled(false);
+        planTripBtn.setBorderPainted(false);
+        planTripBtn.setFocusPainted(false);
+        planTripBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        planTripBtn.addActionListener(e -> {
+            if (homeView != null && homeView.getSearchButton() != null) {
+                homeView.getSearchButton().doClick();
+            }
+        });
+        rightPanel.add(planTripBtn);
+
+        // "Login" Pill Button (instead of My Account, to the right of Plan My Trip)
+        JButton loginBtn = new JButton("Login");
+        loginBtn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
+        loginBtn.putClientProperty(FlatClientProperties.STYLE, 
+            "arc: 999;" +
+            "background: #FFFFFF;" +
+            "foreground: #0F172A;" +
+            "hoverBackground: #F1F5F9;" +
+            "borderWidth: 0;" +
+            "margin: 6,14,6,14;"
+        );
+        loginBtn.setPreferredSize(new Dimension(72, 42));
+        loginBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        loginBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+            "Passenger Sign In\nEnter your registered mobile number or IRCTC username to access bookings.",
+            "Login", JOptionPane.INFORMATION_MESSAGE));
+        rightPanel.add(loginBtn);
 
         header.add(rightPanel, BorderLayout.EAST);
 
         return header;
     }
 
-    private JButton createNavPill(String title, boolean active) {
+    private JButton createTranslucentNavPill(String title) {
         JButton btn = new JButton(title);
-        btn.setFont(new Font("Inter", active ? Font.BOLD : Font.PLAIN, 14));
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
+        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
+        btn.putClientProperty(FlatClientProperties.STYLE, 
+            "arc: 999;" +
+            "background: #00000000;" +
+            "foreground: #FFFFFF;" +
+            "hoverBackground: #FFFFFF24;" +
+            "borderWidth: 0;" +
+            "margin: 0,16,0,16;"
+        );
+        Dimension pref = btn.getPreferredSize();
+        btn.setPreferredSize(new Dimension(pref.width, 42));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        if (active) {
-            // Primary brand orange text, no background, no border
-            btn.putClientProperty(FlatClientProperties.STYLE, "background: #00000000; foreground: #FA5909; borderWidth: 0;");
-        } else {
-            // Clean high-contrast off-white text, no background, no border
-            btn.putClientProperty(FlatClientProperties.STYLE, "background: #00000000; foreground: #F1F5F9; hoverForeground: #FA5909; borderWidth: 0;");
-        }
         return btn;
+    }
+
+    private void showDestinationsMenu(Component invoker) {
+        JPopupMenu popup = new JPopupMenu();
+
+        JLabel header = new JLabel("Popular Rail Expeditions");
+        header.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
+        header.setBorder(new EmptyBorder(6, 12, 4, 12));
+        popup.add(header);
+        popup.addSeparator();
+
+        String[] destinations = {
+            "Swiss Alps Panoramic Express",
+            "Himalayan Toy Train (Kalka - Shimla)",
+            "Vande Bharat Express (Delhi - Varanasi)",
+            "Kashmir Valley Snow Rail (Banihal - Baramulla)",
+            "Palace on Wheels Heritage Tour"
+        };
+
+        for (String dest : destinations) {
+            JMenuItem item = new JMenuItem(dest);
+            item.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
+            item.addActionListener(e -> {
+                JOptionPane.showMessageDialog(this,
+                    "Destination Selected: " + dest + "\nFind available departures below.",
+                    "Rail Destination", JOptionPane.INFORMATION_MESSAGE);
+            });
+            popup.add(item);
+        }
+
+        popup.show(invoker, 0, invoker.getHeight() + 6);
+    }
+
+    private void showPackagesMenu(Component invoker) {
+        JPopupMenu popup = new JPopupMenu();
+
+        JLabel header = new JLabel("Curated Travel Packages");
+        header.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
+        header.setBorder(new EmptyBorder(6, 12, 4, 12));
+        popup.add(header);
+        popup.addSeparator();
+
+        String[] packages = {
+            "Weekend Alpine Explorer (3 Days / 2 Nights)",
+            "Golden Triangle Heritage Circuit (5 Days / 4 Nights)",
+            "Kashmir Valley Snow Safari (4 Days / 3 Nights)",
+            "Coastal Konkan Rail Journey (3 Days / 2 Nights)"
+        };
+
+        for (String pkg : packages) {
+            JMenuItem item = new JMenuItem(pkg);
+            item.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
+            item.addActionListener(e -> {
+                JOptionPane.showMessageDialog(this,
+                    "Selected Package: " + pkg + "\nViewing itinerary & reservation details.",
+                    "Travel Packages", JOptionPane.INFORMATION_MESSAGE);
+            });
+            popup.add(item);
+        }
+
+        popup.show(invoker, 0, invoker.getHeight() + 6);
     }
 
     private void showAudioDevicePopup(Component invoker, int x, int y) {
         JPopupMenu popup = new JPopupMenu();
-        popup.putClientProperty(FlatClientProperties.STYLE, "arc: 16;");
 
         JLabel title = new JLabel("Audio Output Source");
-        title.setFont(new Font("Inter", Font.BOLD, 12));
+        title.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
         title.setBorder(new EmptyBorder(6, 12, 4, 12));
         popup.add(title);
         popup.addSeparator();
@@ -308,7 +641,7 @@ public class MainFrame extends JFrame {
             boolean isSelected = device.equalsIgnoreCase(currentSelected) ||
                     ("Auto".equalsIgnoreCase(currentSelected) && device.startsWith("Auto"));
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(device, isSelected);
-            item.setFont(new Font("Inter", Font.PLAIN, 12));
+            item.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
             item.addActionListener(ev -> {
                 String chosen = device.startsWith("Auto") ? "Auto" : device;
                 AudioManager.setSelectedOutputDevice(chosen);

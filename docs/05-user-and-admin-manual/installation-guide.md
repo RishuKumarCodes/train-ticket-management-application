@@ -32,6 +32,7 @@
    cp src/main/resources/application.properties.example src/main/resources/application.properties
    ```
 2. Open `src/main/resources/application.properties` and verify your MySQL port, username, and password.
+   > **Security Note**: `application.properties`, custom profile properties (`application-*.properties`), and `.env` files are excluded in `.gitignore` to prevent credential exposure.
 
 ### Step 3: Run the Application
 You can run the application using any of the following methods:

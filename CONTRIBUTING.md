@@ -24,8 +24,9 @@ src/
 │   │   ├── Main.java                  # Main application entrypoint: initializes FlatLaf dark theme & launches MainFrame on EDT
 │   │   ├── view/
 │   │   │   ├── MainFrame.java         # Root desktop window (1280x820), top navigation header, OS taskbar/dock icon integration
+│   │   │   ├── component/             # Reusable UI components (VideoBackgroundPanel, home/ subcomponents)
 │   │   │   └── pages/
-│   │   │       └── HomeView.java      # Initial landing page with 24px glass search card, date picker & quick shortcuts
+│   │   │       └── HomeView.java      # Initial landing page with Hero, Featured Destinations & quick shortcuts
 │   │   ├── model/                     # Domain entities, DTOs, and JDBC DAOs (added as database models are built)
 │   │   ├── controller/                # User action listeners and asynchronous background workers (SwingWorker)
 │   │   └── util/

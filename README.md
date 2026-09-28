@@ -38,9 +38,10 @@ train-ticket-management-application/
     │   │   ├── view/
     │   │   │   ├── MainFrame.java         # Root desktop window (1280x820), JLayeredPane, top navigation bar, and OS Dock icon binding
     │   │   │   ├── component/
-    │   │   │   │   └── VideoBackgroundPanel.java # Embedded JavaFX MediaPlayer rendering looping hero.mp4 background with cover-scaling
+    │   │   │   │   ├── VideoBackgroundPanel.java # Embedded JavaFX MediaPlayer rendering looping hero.mp4 background with cover-scaling
+    │   │   │   │   └── home/                  # Modular landing page components (HeroSection, SearchCapsulePanel, FeaturedDestinationsSection, etc.)
     │   │   │   └── pages/
-    │   │   │       └── HomeView.java      # Initial landing page with 24px glass search card, date picker & quick-action shortcuts
+    │   │   │       └── HomeView.java          # Orchestrator landing page with Hero, Featured Destinations, and smart occlusion culling
     │   │   ├── model/                     # Domain entities, DTOs, and JDBC DAOs (populated as database models are implemented)
     │   │   ├── controller/                # User action listeners and asynchronous background workers (SwingWorker)
     │   │   └── util/
@@ -106,17 +107,29 @@ mysql -u root -p < src/main/resources/db/schema.sql
 
 You can launch RailFlow using any of the following methods:
 
-#### Method A: From Terminal via Maven
+#### Method A: Live-Reload Dev Mode (Recommended for Development)
+Automatically watches `src/main` for any code or asset changes, recompiles incrementally, and restarts the application automatically on save:
 ```bash
-mvn clean compile exec:java
+./dev.sh
 ```
 
-#### Method B: Directly in Your IDE (VS Code or IntelliJ IDEA)
+#### Method B: One-Click macOS Desktop Launcher
+You can double-click **`RailFlow.command`** directly in macOS Finder to launch the app without opening terminal.
+
+#### Method C: Standard Terminal Launch
+```bash
+mvn exec:java
+```
+
+#### Method D: In-App Hot-Reload Shortcut
+While RailFlow is running, press **`⌘ + R`** (or **`F5`** / **`Ctrl + R`**) inside the application window to instantly hot-reload and repaint the active view without restarting the JVM!
+
+#### Method E: Directly in Your IDE (VS Code or IntelliJ IDEA)
 1. Open the project folder in your IDE.
 2. Navigate to [`src/main/java/com/trainticket/Main.java`](src/main/java/com/trainticket/Main.java).
 3. Click the **Run ▶** button above `public static void main(String[] args)`.
 
-#### Method C: Build Standalone Executable (.JAR)
+#### Method F: Build Standalone Executable (.JAR)
 ```bash
 # Package into a single executable JAR with all dependencies bundled
 mvn clean package
