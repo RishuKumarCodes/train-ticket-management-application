@@ -42,8 +42,8 @@ Every component, model, and controller must strictly adhere to the Separation of
 
 ### 1.2 View Layer (`com.trainticket.view`)
 - **Passive Views**: Views should render state and expose interactive hooks (event listener setters, observational callbacks). They never execute SQL queries or heavy business calculations.
-- **Modern Look & Feel**: Uses `FlatLaf` (Dark / Light themes) with custom rendering enhancements.
-- **Glassmorphism & Gradients**: Subtle background blurs, rounded borders (`FlatBorder`), translucent cards (`new Color(255, 255, 255, 18)` or dark equivalents).
+- **Universal Light Look & Feel**: Uses `FlatLightLaf` globally with custom frosted milk-glass rendering enhancements. Strictly no dark themes or dark surfaces anywhere in the application.
+- **Glassmorphism & Gradients**: Subtle background blurs, rounded borders (`FlatBorder`), translucent milk-glass cards (`new Color(255, 255, 255, 235)` or pure white `#FFFFFF` sheets with `#E2E8F0` hairline borders).
 - **Anti-Aliasing**: All custom paint routines MUST enable `RenderingHints`:
   ```java
   g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -96,21 +96,40 @@ Every interaction, state change, and geometry resize MUST feel alive, fluid, and
 
 ---
 
-## 4. UI Geometry & Minimalist Aesthetic Contract
+## 4. UI Geometry & Minimalist Aesthetic Contract (Strict Universal Light Theme)
 
-### 4.1 Rounded Corners & Geometry Rules
-- **Buttons**: MUST be **full rounded pill buttons** (radius = height / 2) or have an explicit minimum **24px border radius** (`arcWidth = 48`, `arcHeight = 48`). Stiff rectangular or sharp-edged buttons are strictly prohibited.
-- **Cards & Containers**: Generous rounded corners with **20px to 28px radius** (`FlatClientProperties.STYLE = "arc: 24"`).
-- **Text Inputs & Search Fields**: Smooth pill or **20px-24px rounded borders** with subtle inset padding (12px-16px).
-- **Modals & Overlays**: Floating glass panels with **28px corner radius** and soft ambient drop shadows.
+### 4.1 Rounded Corners & Geometry Rules (Identical to Featured Destinations Cards)
+- **Cards & Dialog Modals**: MUST have a **50px corner radius** (`arc: 100`, `arcWidth = 100`, `arcHeight = 100`, or `FlatClientProperties.STYLE = "arc: 100; borderWidth: 0;"`), identical to the Featured Destinations cards on the home page.
+- **Card Borders**: **STRICTLY NO BORDERS ON ANY CARD**. Hairline borders (`#E2E8F0` or any stroke) are forbidden on cards. All depth and elevation are achieved purely through clean white/frosted glass surfaces and multi-tiered soft ambient drop shadows (`new Color(0, 0, 0, 12)` and `new Color(0, 0, 0, 20)`).
+- **Buttons**: MUST be **full rounded pill buttons** (radius = height / 2, `arc: 999`). Stiff rectangular or sharp-edged buttons are strictly prohibited.
+- **Text Inputs & Password Fields**: MUST be **full rounded pill shaped** (`arc: 999`, radius = height / 2) with generous inset padding (`16px-18px`), background `#F8FAFC`, border `#E2E8F0`, and focused border `#FA5909` (or `#0284C7` in admin context).
+- **Popup Dialogs (`ModernModalDialog`)**: All modal dialogs MUST extend `ModernModalDialog`, operating as separate fixed-size windows with application modality (`APPLICATION_MODAL`), native macOS traffic lights (red close, yellow minimize, green status), draggable window headers, 60 FPS enter/exit spring animations, and multi-tier ambient shadows without edge clipping.
 
-### 4.2 Sleek, Minimalist Visual Discipline
-- **Zero Unnecessary Text**: Eliminate redundant headers, explanatory tooltips, verbose instructions, and clutter. Let clean typography, intuitive icons, and layout hierarchy guide the user.
-- **Universal Visual Consistency**: All pages (Train Search, Coach/Seat Selection, Booking Summary, Admin Dashboard) MUST share identical:
-  - Color tokens (sleek dark glassmorphism, electric indigo / emerald green accents).
-  - Button styles (identical 24px / pill geometry and hover dynamics).
-  - Margins, paddings, and font scale.
-- **Glassmorphism & Micro-Accents**: Subtle translucent background fills (`rgba(255, 255, 255, 0.05)` on dark surfaces) with 1px hairline borders (`rgba(255, 255, 255, 0.12)`).
+### 4.2 Sleek, Minimalist Visual Discipline & Uncluttered Typography
+- **Main Headings MUST Use Bebas Neue**: All main headings across all cards, dialogs, modals, and screen sections MUST use the **Bebas Neue** font (`AssetManager.getFont("Bebas Neue", Font.BOLD, ...)`) in uppercase for a clean, monumental title aesthetic.
+- **Zero Header Clutter (Strict Elimination Rule)**:
+  - **NO ICONS**: Do NOT add icons (emojis, shields, lightning bolts, vector glyphs) in or next to main titles.
+  - **NO SMALL ORANGE EYEBROW TITLES**: Do NOT add extra small orange titles/badges above the title (e.g., remove `RAILFLOW PASSENGER`, `STATION MASTER DISPATCH`).
+  - **NO SUBTITLE DESCRIPTIONS**: Do NOT add explanatory subtitles or descriptions below the title.
+  - Let the clean, monumental Bebas Neue headline stand proudly on its own with generous breathing space.
+- **Zero Dark Themes**: The entire application (Home page, Search results, Booking, Seat selection, Login popups, Admin command center) MUST strictly use the Light Theme. Dark backgrounds or cyber-slate interfaces are forbidden.
+- **Universal Color Tokens**:
+  - **Canvas / Base Background**: Clean Slate/Sky Canvas (`#F8FAFC`).
+  - **Card Surfaces**: Crisp Pure White (`#FFFFFF`) or Frosted Milk Glass (`rgba(255, 255, 255, 0.92)` / `235-248 alpha`).
+  - **Primary Text**: Deep Obsidian / Slate (`#0F172A`).
+  - **Subdued Text / Labels**: Muted Slate (`#64748B`).
+  - **Primary Accent**: Brand Orange (`#FA5909`, hover `#E04D05`, pressed `#C93F00`).
+  - **Secondary Accents**:
+    - Sky Blue (`#2563EB` text on `#EFF6FF` pill / `#0284C7` admin portal accent)
+    - Emerald Green (`#10B981` text on `#ECFDF5` pill)
+    - Amber (`#EA580C` text on `#FFF7ED` pill)
+    - Purple (`#9333EA` text on `#FAF5FF` pill)
+  - **Error / Danger**: Coral Red (`#EF4444`).
+- **Typography Scale**:
+  - Main Headings / Display Titles: **Bebas Neue** (24px - 40px uppercase, `#0F172A`).
+  - Field Labels: Roboto Bold 10px-11px uppercase in `#64748B`.
+  - Body & Inputs: Roboto Bold 14px-15px (or Plain 13px) in `#0F172A`.
+  - Buttons: Roboto Bold 13px-14px.
 
 
 ---

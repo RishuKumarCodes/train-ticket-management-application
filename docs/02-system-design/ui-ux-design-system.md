@@ -42,19 +42,63 @@ RailFlow strictly uses organic, rounded curvature throughout the desktop applica
 
 ---
 
-## 3. Color Tokens & Glassmorphism
+## 3. Color Tokens & Glassmorphism (Universal Light Theme)
+
+All screens, modals, dialogs, and administrative consoles adhere strictly to the **Light Theme & Frosted Milk-Glass System** established by the home page:
 
 | Token Name | Hex / RGBA | Role |
 |---|---|---|
-| `--bg-base` | `#0B0F19` | Main canvas background |
-| `--surface-card` | `rgba(255, 255, 255, 0.05)` | Glassmorphic cards |
-| `--surface-card-hover`| `rgba(255, 255, 255, 0.09)` | Hover elevation surface |
-| `--border-subtle` | `rgba(255, 255, 255, 0.10)` | Hairline card border (1px) |
-| `--accent-primary` | `#FA5909` | Primary brand orange actions & active states |
-| `--accent-hover` | `#E04D05` | Brand orange hover fill |
-| `--accent-emerald` | `#10B981` | Available seats, confirmed status |
-| `--text-primary` | `#F8FAFC` | Primary text |
-| `--text-muted` | `#94A3B8` | Subdued secondary labels |
+| `--bg-base` | `#F8FAFC` | Main canvas / viewport background |
+| `--surface-card` | `rgba(255, 255, 255, 0.92)` | Frosted milk-glass cards & modals (alpha 235) |
+| `--surface-pure-white` | `#FFFFFF` | Solid white cards, active tabs, and pill buttons |
+| `--surface-subtle` | `#F1F5F9` | Tab capsules, guest buttons, and search badges |
+| `--border-subtle` | `#E2E8F0` | 1px hairline border stroke |
+| `--text-primary` | `#0F172A` | Primary typography (deep obsidian slate) |
+| `--text-muted` | `#64748B` | Subdued secondary labels, captions, and placeholders |
+| `--accent-primary` | `#FA5909` | Brand Orange actions, active indicators, and focus rings |
+| `--accent-hover` | `#E04D05` | Brand Orange hover fill |
+| `--accent-pressed` | `#C93F00` | Brand Orange active press fill |
+| `--accent-blue` | `#2563EB` | Sky Blue icon badge (`#EFF6FF` background) |
+| `--accent-emerald` | `#10B981` | Emerald Green status badge (`#ECFDF5` background) |
+| `--accent-amber` | `#EA580C` | Amber destination badge (`#FFF7ED` background) |
+| `--accent-purple` | `#9333EA` | Purple date badge (`#FAF5FF` background) |
+| `--status-error` | `#EF4444` | Validation error text and indicators |
+
+### 3.1 Visual Cohesion: Passenger Interface & Station Master Console
+
+Every screen and dialog in RailFlow shares the identical clean light aesthetic:
+
+1. **Modal Architecture: `ModernModalDialog` Reusable Base Component**:
+   - **True Separate Window**: All application modals extend `ModernModalDialog`, operating as independent native modal windows (`ModalityType.APPLICATION_MODAL`) with a fixed, non-resizable footprint.
+   - **Full Application Blocking**: Until the popup window is closed or authenticated, all user interaction with the background application is strictly blocked by the modal loop.
+   - **macOS Window Controls (Traffic Lights)**: Integrated window title bar featuring native-grade macOS traffic lights:
+     - **Red Close Button** (`#FF5F56`, hover `#E0443E` with `✕` glyph): Triggers fluid exit animation before disposing.
+     - **Yellow Minimize Button** (`#FFBD2E`, hover `#DEA123` with `−` glyph): Minimizes application window cleanly.
+     - **Green Status Indicator** (`#27C93F`): Active modal indicator.
+   - **Draggable Title Bar**: Integrated drag-to-move listener on the window header allowing smooth repositioning anywhere on screen.
+   - **Fluid Lifecycle Animations (60 FPS)**:
+     - **Entrance**: Organic damped spring ease-out ($k \approx 180, \zeta \approx 0.65$), scaling $0.90 \to 1.00$ with simultaneous alpha fade $0.0 \to 1.0$ over 280ms.
+     - **Exit**: Smooth quadratic deceleration curve scaling $1.00 \to 0.92$ with alpha fade $1.0 \to 0.0$ over 180ms prior to window disposal.
+     - **Keyboard**: Escape key (`VK_ESCAPE`) triggers `animateClose()`.
+   - **Multi-Tier Ambient Shadows**: 24px outer canvas padding ensuring 3-tier Gaussian ambient drop shadows (`new Color(0, 0, 0, 8)`, `new Color(0, 0, 0, 14)`, `new Color(0, 0, 0, 22)`) never clip against the OS window rectangle.
+   - **Card Curvature & Borders**: Exactly **50px corner radius** (`arc: 100`, matching Featured Destinations cards) and **strictly 0px border** (`borderWidth: 0`).
+   - **Typography**: Display headings rendered in condensed uppercase **Bebas Neue Bold** (`34pt - 36pt`). Zero header clutter (no icons, no small orange eyebrow badges, no subtitle descriptions).
+   - **Full Rounded Pill Controls**: All text inputs, password fields, and action buttons are **100% full rounded pill shaped** (`arc: 999`, radius = height / 2) with generous 18px horizontal padding and Brand Orange focus rings (`#FA5909`).
+
+2. **Passenger Authentication Modal (`AuthDialog`)**:
+   - Extends `ModernModalDialog` with $520 \times 560\text{px}$ card canvas.
+   - Monumental Bebas Neue title (`WELCOME TO RAILFLOW` / `CREATE ACCOUNT`).
+   - Pill segmented tab switcher (`#F1F5F9` pill capsule, `arc: 999`).
+   - 100% full pill inputs (`arc: 999`, `#F8FAFC` fill, `#E2E8F0` border, `#FA5909` focus ring).
+   - Full pill Brand Orange submit button with squash/stretch liquid animation and "Continue as Guest" pill button.
+   - Shortcut footer link to Station Master Operations Console.
+
+3. **Station Master Operations Console (`AdminDashboardFrame` & `AdminLoginDialog`)**:
+   - **Admin Login Modal (`AdminLoginDialog`)**: Extends `ModernModalDialog` with $480 \times 460\text{px}$ card canvas, Bebas Neue title `STATION MASTER CONSOLE`, full pill Operator ID and Master Access Key inputs (`arc: 999`), Sky Blue pill authorize button (`#0284C7`), and cancel button.
+   - **Admin Dashboard Layout (`AdminDashboardFrame`)**:
+     - Sidebar: 250px pure white `#FFFFFF` sidebar with `#E2E8F0` right border, "RAILFLOW" title in `#0284C7`, pill navigation toggle buttons (`arc: 14`, selected background `#0284C7` with white text, hover `#F1F5F9`), operator badge, and pill exit button.
+     - Top Command Bar: Solid white bar with live digital clock in `#0F172A` and pill database connection indicator badge (`#ECFDF5`/`#10B981`).
+     - Operational Overview: 4 metric cards with 50px arc, `#FFFFFF` fill, 0px border, soft drop shadows, Bebas Neue metric headers, and high-contrast metric values; live train rosters table with 40px row height, `#FFFFFF` background, `#F8FAFC` headers, and status badges.
 
 ---
 

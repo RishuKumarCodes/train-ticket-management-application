@@ -18,6 +18,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
+import com.trainticket.model.AuthSession;
+import com.trainticket.model.User;
+import com.trainticket.view.dialog.AuthDialog;
+import com.trainticket.view.admin.AdminDashboardFrame;
 
 /**
  * Main application window for RailFlow.
@@ -33,6 +37,7 @@ public class MainFrame extends JFrame {
     private JPanel contentContainer;
     private HomeView homeView;
     private VideoBackgroundPanel videoBackgroundPanel;
+    private JButton authBtn;
 
     public MainFrame() {
         super("");
@@ -47,7 +52,8 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(1024, 680));
         setLocationRelativeTo(null); // Center on screen
 
-        // Enable cross-platform full-window content so video background extends to the very top edge
+        // Enable cross-platform full-window content so video background extends to the
+        // very top edge
         JRootPane root = getRootPane();
         root.putClientProperty(FlatClientProperties.FULL_WINDOW_CONTENT, true);
         root.putClientProperty(FlatClientProperties.USE_WINDOW_DECORATIONS, true);
@@ -84,7 +90,8 @@ public class MainFrame extends JFrame {
         });
 
         // In-app live reload shortcut (Cmd+R on Mac, Ctrl+R on Windows/Linux, or F5)
-        KeyStroke cmdR = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        KeyStroke cmdR = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R,
+                Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         KeyStroke f5 = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0);
         getRootPane().registerKeyboardAction(e -> reloadCurrentView(), cmdR, JComponent.WHEN_IN_FOCUSED_WINDOW);
         getRootPane().registerKeyboardAction(e -> reloadCurrentView(), f5, JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -132,7 +139,8 @@ public class MainFrame extends JFrame {
     }
 
     private void initComponents() {
-        // Layered pane hosting the video background at Layer 0 and UI components at Layer 1
+        // Layered pane hosting the video background at Layer 0 and UI components at
+        // Layer 1
         JLayeredPane layeredPane = new JLayeredPane() {
             @Override
             public boolean isOptimizedDrawingEnabled() {
@@ -155,7 +163,8 @@ public class MainFrame extends JFrame {
         videoBackgroundPanel = new VideoBackgroundPanel();
         layeredPane.add(videoBackgroundPanel, JLayeredPane.DEFAULT_LAYER);
 
-        // 2. Top Layer (1): Passive UI Views & Navigation Header with extended ambient scrim
+        // 2. Top Layer (1): Passive UI Views & Navigation Header with extended ambient
+        // scrim
         JPanel uiOverlayPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -165,12 +174,12 @@ public class MainFrame extends JFrame {
                 int gradientHeight = 240; // Extended smooth falloff height
 
                 // Ultra-smooth subtle dark ambient scrim fading gently into the video
-                float[] fractions = {0.0f, 0.35f, 0.70f, 1.0f};
+                float[] fractions = { 0.0f, 0.35f, 0.70f, 1.0f };
                 Color[] colors = {
-                    new Color(0, 0, 0, 95),  // Soft, subtle starting black (~37% opacity)
-                    new Color(0, 0, 0, 50),  // Smooth feathering
-                    new Color(0, 0, 0, 15),  // Delicate ambient falloff
-                    new Color(0, 0, 0, 0)    // Fully dissipated at 240px
+                        new Color(0, 0, 0, 95), // Soft, subtle starting black (~37% opacity)
+                        new Color(0, 0, 0, 50), // Smooth feathering
+                        new Color(0, 0, 0, 15), // Delicate ambient falloff
+                        new Color(0, 0, 0, 0) // Fully dissipated at 240px
                 };
                 LinearGradientPaint gradient = new LinearGradientPaint(0, 0, 0, gradientHeight, fractions, colors);
                 g2.setPaint(gradient);
@@ -245,13 +254,28 @@ public class MainFrame extends JFrame {
             {
                 addMouseListener(new MouseAdapter() {
                     @Override
-                    public void mouseEntered(MouseEvent e) { isHovered = true; repaint(); }
+                    public void mouseEntered(MouseEvent e) {
+                        isHovered = true;
+                        repaint();
+                    }
+
                     @Override
-                    public void mouseExited(MouseEvent e) { isHovered = false; repaint(); }
+                    public void mouseExited(MouseEvent e) {
+                        isHovered = false;
+                        repaint();
+                    }
+
                     @Override
-                    public void mousePressed(MouseEvent e) { isPressed = true; repaint(); }
+                    public void mousePressed(MouseEvent e) {
+                        isPressed = true;
+                        repaint();
+                    }
+
                     @Override
-                    public void mouseReleased(MouseEvent e) { isPressed = false; repaint(); }
+                    public void mouseReleased(MouseEvent e) {
+                        isPressed = false;
+                        repaint();
+                    }
                 });
             }
 
@@ -277,7 +301,8 @@ public class MainFrame extends JFrame {
                     g2.setColor(isHovered ? new Color(241, 245, 249) : Color.WHITE);
                     g2.fillOval(0, 0, w, h);
                 } else {
-                    // MUSIC ON: Dark black smoked glass with live backdrop blur (matching navCapsule)
+                    // MUSIC ON: Dark black smoked glass with live backdrop blur (matching
+                    // navCapsule)
                     g2.setColor(new Color(0, 0, 0, 45));
                     g2.fillOval(0, 2, w, h);
 
@@ -333,6 +358,7 @@ public class MainFrame extends JFrame {
                     showAudioDevicePopup(musicBtn, e.getX(), e.getY());
                 }
             }
+
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (e.isPopupTrigger()) {
@@ -344,7 +370,8 @@ public class MainFrame extends JFrame {
 
         header.add(brandPanel, BorderLayout.WEST);
 
-        // 2. Navigation Capsule (Center) - Floating Frosted Glass Pill with Real Backdrop Blur
+        // 2. Navigation Capsule (Center) - Floating Frosted Glass Pill with Real
+        // Backdrop Blur
         JPanel navCenterWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         navCenterWrapper.setOpaque(false);
 
@@ -384,16 +411,24 @@ public class MainFrame extends JFrame {
         navCapsule.setOpaque(false);
         navCapsule.setBorder(new EmptyBorder(0, 0, 0, 8));
 
-        // Active "Book Journey" Pill: Solid White Button with Dark Typography (42px height, flush fit)
+        // Active "Book Journey" Pill: Solid White Button with Dark Typography (42px
+        // height, flush fit)
         JButton bookBtn = new JButton("Book Journey") {
             private boolean isHovered = false;
 
             {
                 addMouseListener(new MouseAdapter() {
                     @Override
-                    public void mouseEntered(MouseEvent e) { isHovered = true; repaint(); }
+                    public void mouseEntered(MouseEvent e) {
+                        isHovered = true;
+                        repaint();
+                    }
+
                     @Override
-                    public void mouseExited(MouseEvent e) { isHovered = false; repaint(); }
+                    public void mouseExited(MouseEvent e) {
+                        isHovered = false;
+                        repaint();
+                    }
                 });
             }
 
@@ -432,15 +467,15 @@ public class MainFrame extends JFrame {
         // "PNR Status" pill
         JButton pnrBtn = createTranslucentNavPill("PNR Status");
         pnrBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "PNR Status & Live Tracking\nEnter your 10-digit PNR to retrieve booking status.",
-            "PNR Status", JOptionPane.INFORMATION_MESSAGE));
+                "PNR Status & Live Tracking\nEnter your 10-digit PNR to retrieve booking status.",
+                "PNR Status", JOptionPane.INFORMATION_MESSAGE));
         navCapsule.add(pnrBtn);
 
         // "Train Schedule" pill
         JButton scheduleBtn = createTranslucentNavPill("Train Schedule");
         scheduleBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "Train Rosters & Timetable\nBrowse route schedules and platform halts.",
-            "Train Schedule", JOptionPane.INFORMATION_MESSAGE));
+                "Train Rosters & Timetable\nBrowse route schedules and platform halts.",
+                "Train Schedule", JOptionPane.INFORMATION_MESSAGE));
         navCapsule.add(scheduleBtn);
 
         navCenterWrapper.add(navCapsule);
@@ -523,40 +558,109 @@ public class MainFrame extends JFrame {
         });
         rightPanel.add(planTripBtn);
 
-        // "Login" Pill Button (instead of My Account, to the right of Plan My Trip)
-        JButton loginBtn = new JButton("Login");
-        loginBtn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
-        loginBtn.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "background: #FFFFFF;" +
-            "foreground: #0F172A;" +
-            "hoverBackground: #F1F5F9;" +
-            "borderWidth: 0;" +
-            "margin: 6,14,6,14;"
-        );
-        loginBtn.setPreferredSize(new Dimension(72, 42));
-        loginBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        loginBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "Passenger Sign In\nEnter your registered mobile number or IRCTC username to access bookings.",
-            "Login", JOptionPane.INFORMATION_MESSAGE));
-        rightPanel.add(loginBtn);
+        // Dynamic Auth Action Pill Button (Guest: Login, Passenger: Profile, Admin:
+        // Console)
+        authBtn = new JButton("Login");
+        authBtn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
+        authBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        updateAuthButton();
+
+        authBtn.addActionListener(e -> handleAuthButtonClick(authBtn));
+        AuthSession.getInstance()
+                .addAuthStateListener((user, role) -> SwingUtilities.invokeLater(this::updateAuthButton));
+        rightPanel.add(authBtn);
 
         header.add(rightPanel, BorderLayout.EAST);
 
         return header;
     }
 
+    private void handleAuthButtonClick(Component invoker) {
+        AuthSession session = AuthSession.getInstance();
+        if (session.isGuest()) {
+            AuthDialog dialog = new AuthDialog(this, user -> updateAuthButton());
+            dialog.setVisible(true);
+        } else if (session.isAdmin()) {
+            JPopupMenu menu = new JPopupMenu();
+            JMenuItem launchCmd = new JMenuItem("⚡ Station Master Console");
+            launchCmd.addActionListener(ev -> {
+                AdminDashboardFrame admin = new AdminDashboardFrame();
+                admin.setVisible(true);
+            });
+            menu.add(launchCmd);
+            menu.addSeparator();
+            JMenuItem signOut = new JMenuItem("Sign Out");
+            signOut.addActionListener(ev -> session.logout());
+            menu.add(signOut);
+            menu.show(invoker, 0, invoker.getHeight() + 4);
+        } else {
+            User user = session.getCurrentUser();
+            JPopupMenu menu = new JPopupMenu();
+            JLabel header = new JLabel("Signed in as @" + (user != null ? user.getUsername() : ""));
+            header.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
+            header.setBorder(new EmptyBorder(4, 12, 4, 12));
+            menu.add(header);
+            menu.addSeparator();
+            JMenuItem bookingsItem = new JMenuItem("My Bookings");
+            bookingsItem.addActionListener(ev -> JOptionPane.showMessageDialog(this,
+                    "No bookings recorded yet.", "My Bookings", JOptionPane.INFORMATION_MESSAGE));
+            menu.add(bookingsItem);
+            JMenuItem travelersItem = new JMenuItem("Saved Passengers");
+            travelersItem.addActionListener(ev -> JOptionPane.showMessageDialog(this,
+                    "0 saved passengers.", "Saved Passengers", JOptionPane.INFORMATION_MESSAGE));
+            menu.add(travelersItem);
+            menu.addSeparator();
+            JMenuItem signOut = new JMenuItem("Sign Out");
+            signOut.addActionListener(ev -> session.logout());
+            menu.add(signOut);
+            menu.show(invoker, 0, invoker.getHeight() + 4);
+        }
+    }
+
+    private void updateAuthButton() {
+        if (authBtn == null)
+            return;
+        AuthSession session = AuthSession.getInstance();
+        User user = session.getCurrentUser();
+
+        if (user == null || session.isGuest()) {
+            authBtn.setText("Login");
+            authBtn.putClientProperty(FlatClientProperties.STYLE,
+                    "arc: 999; background: #FFFFFF; foreground: #0F172A; hoverBackground: #F1F5F9; borderWidth: 0; margin: 6,14,6,14;");
+            authBtn.setPreferredSize(new Dimension(72, 42));
+        } else if (session.isAdmin()) {
+            authBtn.setText("⚡ Admin Portal ▾");
+            authBtn.putClientProperty(FlatClientProperties.STYLE,
+                    "arc: 999; background: #0284C7; foreground: #FFFFFF; hoverBackground: #0369A1; borderWidth: 0; margin: 6,14,6,14;");
+            Dimension pref = authBtn.getPreferredSize();
+            authBtn.setPreferredSize(new Dimension(Math.max(pref.width + 16, 140), 42));
+        } else {
+            String name = user.getFullName();
+            if (name.length() > 14) {
+                name = name.substring(0, 12) + "..";
+            }
+            authBtn.setText("👤 " + name + " ▾");
+            authBtn.putClientProperty(FlatClientProperties.STYLE,
+                    "arc: 999; background: #FFFFFF; foreground: #0F172A; hoverBackground: #F1F5F9; borderWidth: 0; margin: 6,14,6,14;");
+            Dimension pref = authBtn.getPreferredSize();
+            authBtn.setPreferredSize(new Dimension(Math.max(pref.width + 16, 120), 42));
+        }
+        if (authBtn.getParent() != null) {
+            authBtn.getParent().revalidate();
+            authBtn.getParent().repaint();
+        }
+    }
+
     private JButton createTranslucentNavPill(String title) {
         JButton btn = new JButton(title);
         btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
-        btn.putClientProperty(FlatClientProperties.STYLE, 
-            "arc: 999;" +
-            "background: #00000000;" +
-            "foreground: #FFFFFF;" +
-            "hoverBackground: #FFFFFF24;" +
-            "borderWidth: 0;" +
-            "margin: 0,16,0,16;"
-        );
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "arc: 999;" +
+                        "background: #00000000;" +
+                        "foreground: #FFFFFF;" +
+                        "hoverBackground: #FFFFFF24;" +
+                        "borderWidth: 0;" +
+                        "margin: 0,16,0,16;");
         Dimension pref = btn.getPreferredSize();
         btn.setPreferredSize(new Dimension(pref.width, 42));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -573,11 +677,11 @@ public class MainFrame extends JFrame {
         popup.addSeparator();
 
         String[] destinations = {
-            "Swiss Alps Panoramic Express",
-            "Himalayan Toy Train (Kalka - Shimla)",
-            "Vande Bharat Express (Delhi - Varanasi)",
-            "Kashmir Valley Snow Rail (Banihal - Baramulla)",
-            "Palace on Wheels Heritage Tour"
+                "Swiss Alps Panoramic Express",
+                "Himalayan Toy Train (Kalka - Shimla)",
+                "Vande Bharat Express (Delhi - Varanasi)",
+                "Kashmir Valley Snow Rail (Banihal - Baramulla)",
+                "Palace on Wheels Heritage Tour"
         };
 
         for (String dest : destinations) {
@@ -585,8 +689,8 @@ public class MainFrame extends JFrame {
             item.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
             item.addActionListener(e -> {
                 JOptionPane.showMessageDialog(this,
-                    "Destination Selected: " + dest + "\nFind available departures below.",
-                    "Rail Destination", JOptionPane.INFORMATION_MESSAGE);
+                        "Destination Selected: " + dest + "\nFind available departures below.",
+                        "Rail Destination", JOptionPane.INFORMATION_MESSAGE);
             });
             popup.add(item);
         }
@@ -604,10 +708,10 @@ public class MainFrame extends JFrame {
         popup.addSeparator();
 
         String[] packages = {
-            "Weekend Alpine Explorer (3 Days / 2 Nights)",
-            "Golden Triangle Heritage Circuit (5 Days / 4 Nights)",
-            "Kashmir Valley Snow Safari (4 Days / 3 Nights)",
-            "Coastal Konkan Rail Journey (3 Days / 2 Nights)"
+                "Weekend Alpine Explorer (3 Days / 2 Nights)",
+                "Golden Triangle Heritage Circuit (5 Days / 4 Nights)",
+                "Kashmir Valley Snow Safari (4 Days / 3 Nights)",
+                "Coastal Konkan Rail Journey (3 Days / 2 Nights)"
         };
 
         for (String pkg : packages) {
@@ -615,8 +719,8 @@ public class MainFrame extends JFrame {
             item.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
             item.addActionListener(e -> {
                 JOptionPane.showMessageDialog(this,
-                    "Selected Package: " + pkg + "\nViewing itinerary & reservation details.",
-                    "Travel Packages", JOptionPane.INFORMATION_MESSAGE);
+                        "Selected Package: " + pkg + "\nViewing itinerary & reservation details.",
+                        "Travel Packages", JOptionPane.INFORMATION_MESSAGE);
             });
             popup.add(item);
         }

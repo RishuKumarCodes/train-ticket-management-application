@@ -16,8 +16,15 @@ RailFlow utilizes a multi-layer verification strategy:
 ## 2. Planned Test Suite Categories
 
 ### 2.1 Authentication & Security (`TC-AUTH`)
-- **`TC-AUTH-01`**: Verify registration with valid and invalid input formats.
-- **`TC-AUTH-02`**: Verify password hashing and SQL injection prevention via `PreparedStatement`.
+- **`TC-AUTH-01`**: Verify passenger registration using email or mobile phone without requiring username, duplicate contact constraint rejections, and invalid email/phone bounds.
+  - Test Suite: `com.trainticket.service.AuthServiceTest` (`testRegistrationWithEmailOnly`, `testRegistrationWithPhoneOnly`, `testRegistrationWithBothEmailAndPhone`, `testRegistrationRejectsMissingContact`, `testInvalidEmail`, `testShortPassword`)
+  - Status: **Passed** (6/6 assertions verified)
+- **`TC-AUTH-02`**: Verify RBAC enforcement and administrator login with fixed credentials (`admin` / `admin`).
+  - Test Suite: `com.trainticket.service.AuthServiceTest` (`testAdminFixedLogin`, `testAdminInvalidPassword`, `testPassengerBlockedFromAdminLogin`)
+  - Status: **Passed** (3/3 assertions verified)
+- **`TC-AUTH-03`**: Verify PBKDF2WithHmacSHA512 salt uniqueness, hash consistency, memory wiping, and constant-time verification.
+  - Test Suite: `com.trainticket.util.PasswordUtilsTest` (`testGenerateSalt`, `testHashConsistency`, `testVerifyPassword`)
+  - Status: **Passed** (3/3 assertions verified)
 
 ### 2.2 Train Search & Timetables (`TC-TRN`)
 - **`TC-TRN-01`**: Verify search between valid stations returns scheduled services and fares.

@@ -58,8 +58,8 @@ RailFlow is a standalone 3-tier desktop application built using strict Model-Vie
 
 | Requirement ID | Module | Description | Priority |
 |---|---|---|---|
-| **REQ-AUTH-01** | Authentication | The system shall allow users to register with name, email, phone, and password. | High |
-| **REQ-AUTH-02** | Authentication | The system shall securely authenticate users and enforce Role-Based Access Control (Admin vs. Passenger). | High |
+| **REQ-AUTH-01** | Authentication | The system shall support optional passenger login with registration (name, email or mobile phone, password) allowing passengers to authenticate via either email or phone while allowing guest exploration. | High |
+| **REQ-AUTH-02** | Authentication | The system shall enforce Role-Based Access Control: passengers access customer booking flows; administrators authenticate via fixed credentials (`admin`) into a dedicated Station Master Command Console (no admin registration). | High |
 | **REQ-TRN-01** | Train Search | The system shall permit train search by source station, destination station, and travel date. | High |
 | **REQ-TRN-02** | Train Search | The search results shall display train number, name, departure time, arrival time, duration, and fare by coach type. | High |
 | **REQ-SEAT-01** | Seat Layout | The system shall display an interactive visual coach seat grid with live status (Available, Booked, Selected). | High |

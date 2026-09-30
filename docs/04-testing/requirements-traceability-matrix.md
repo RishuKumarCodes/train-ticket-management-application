@@ -16,8 +16,8 @@ As each feature and test is implemented, its verification row will be populated 
 
 | Requirement ID | Requirement Summary | Implementation Package / Class | Test Case ID | Test Status |
 |---|---|---|---|---|
-| **REQ-AUTH-01** | User registration & validation | *(Mapped upon implementation)* | `TC-AUTH-01` | Planned |
-| **REQ-AUTH-02** | User authentication & role access | *(Mapped upon implementation)* | `TC-AUTH-02` | Planned |
+| **REQ-AUTH-01** | User registration & validation | `com.trainticket.model.service.AuthService`<br>`com.trainticket.model.dao.UserDAO`<br>`com.trainticket.view.dialog.AuthDialog` | `TC-AUTH-01` | **Passed** |
+| **REQ-AUTH-02** | User authentication & role access | `com.trainticket.model.service.AuthService`<br>`com.trainticket.controller.AuthController`<br>`com.trainticket.view.dialog.AdminLoginDialog`<br>`com.trainticket.view.admin.AdminDashboardFrame` | `TC-AUTH-02` | **Passed** |
 | **REQ-TRN-01** | Multi-criteria train search interface | `com.trainticket.view.pages.HomeView` | `TC-TRN-01` | In Progress |
 | **REQ-TRN-02** | Schedules, stops & coach fare view | *(Mapped upon implementation)* | `TC-TRN-02` | Planned |
 | **REQ-SEAT-01** | Interactive coach seat map | *(Mapped upon implementation)* | `TC-SEAT-01` | Planned |
