@@ -13,6 +13,8 @@ import java.awt.Dimension;
  */
 public class HeroSection extends JPanel {
 
+    private static final long serialVersionUID = 1L;
+
     private final SearchCapsulePanel searchCapsule;
     private final HeroCenterTitleComponent heroTitleComp;
 
@@ -48,12 +50,13 @@ public class HeroSection extends JPanel {
             return;
         }
 
-        // 1. Search Capsule positioned at the bottom with 32px margin below
+        // 1. Search Capsule — shifted lower with a larger bottom margin so the
+        //    title has more breathing room above and less dead space below.
         Dimension capSize = searchCapsule.getPreferredSize();
         int capW = Math.min(capSize.width, w - 48);
         int capH = capSize.height;
         int capX = (w - capW) / 2;
-        int bottomMargin = 32;
+        int bottomMargin = 72; // was 32 — shift capsule down toward the lower third
         int capY = h - capH - bottomMargin;
         searchCapsule.setBounds(capX, capY, capW, capH);
 

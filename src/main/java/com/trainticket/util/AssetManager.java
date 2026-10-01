@@ -15,7 +15,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Utility for loading and caching application media assets (images, icons, fonts)
+ * Utility for loading and caching application media assets (images, icons,
+ * fonts)
  * from the classpath.
  */
 public final class AssetManager {
@@ -42,11 +43,14 @@ public final class AssetManager {
     }
 
     /**
-     * Pre-loads and registers all bundled application fonts into the local GraphicsEnvironment.
-     * Maps specific font variants explicitly so Roboto Regular is never overwritten by Italic.
+     * Pre-loads and registers all bundled application fonts into the local
+     * GraphicsEnvironment.
+     * Maps specific font variants explicitly so Roboto Regular is never overwritten
+     * by Italic.
      */
     public static synchronized void loadApplicationFonts() {
-        if (fontsInitialized) return;
+        if (fontsInitialized)
+            return;
 
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
@@ -137,7 +141,8 @@ public final class AssetManager {
     /**
      * Loads an Image from classpath resources with in-memory caching.
      *
-     * @param resourcePath relative path inside classpath, e.g. "/assets/icons/icon.png"
+     * @param resourcePath relative path inside classpath, e.g.
+     *                     "/assets/icons/icon.png"
      * @return the loaded Image, or null if the resource could not be found
      */
     public static Image getImage(String resourcePath) {
@@ -146,7 +151,12 @@ public final class AssetManager {
         }
 
         return imageCache.computeIfAbsent(resourcePath, path -> {
-            URL url = AssetManager.class.getResource(path);
+            String norm = path.startsWith("/") ? path : "/" + path;
+            URL url = AssetManager.class.getResource(norm);
+            if (url == null) {
+                String alt = path.startsWith("/") ? path.substring(1) : path;
+                url = AssetManager.class.getClassLoader().getResource(alt);
+            }
             if (url == null) {
                 logger.warn("Asset not found on classpath: {}", path);
                 return null;

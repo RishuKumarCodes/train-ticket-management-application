@@ -15,8 +15,10 @@
 - **Interactive Coach & Seat Map**: Visual coach schematics displaying Lower, Middle, Upper, Side Berths, and Window seats with real-time seat locking to prevent double bookings.
 - **Reservation & PNR Tracking**: Multi-passenger booking transactions, automated unique 10-digit PNR generation, and printable e-ticket summaries.
 - **Cancellations & Automated Refunds**: Full or partial ticket cancellation with automated tiered refund calculations based on departure timetable rules.
-- **Admin Fleet & Schedule Operations**: Add/update train rosters, configure coach layouts, adjust schedule statuses (`ON_TIME`, `DELAYED`, `CANCELLED`), and review revenue reports.
-- **Modern Desktop Experience**: FlatLaf Dark theme, smooth 24px rounded corners and pill buttons, zero text clutter, and asynchronous background workers preventing UI freezing.
+- **Admin Fleet & Schedule Operations**: Full-page Station Master operations center with live digital clock, fleet rosters, route halts, booking manifests, and real-time database telemetry.
+- **Modern Desktop Experience**: FlatLaf Universal Light theme, 50px borderless cards (`arc: 100`), full rounded pill buttons (`arc: 999`), monumental Bebas Neue display typography, zero header clutter, and 60 FPS spring animations.
+- **Modular Component Architecture**: High cohesion, decoupled MVC design (`AppHeaderPanel`, `TrainResultCard`, `CoachClassPillButton`, `BookingTicketCard`, `AdminSidebar`, `AdminTopBar`, `AdminStatCard`).
+- **Comprehensive Verification**: 51 passing unit tests with lightweight standalone runner and zero compiler warnings under `javac -Xlint:all`.
 
 ---
 
@@ -34,19 +36,22 @@ train-ticket-management-application/
 └── src/
     ├── main/
     │   ├── java/com/trainticket/
-    │   │   ├── Main.java                  # Application entry point: initializes FlatLaf dark theme & launches MainFrame on EDT
+    │   │   ├── Main.java                  # Application entry point: initializes FlatLaf Universal Light theme & launches MainFrame on EDT
     │   │   ├── view/
-    │   │   │   ├── MainFrame.java         # Root desktop window (1280x820), JLayeredPane, top navigation bar, and OS Dock icon binding
+    │   │   │   ├── MainFrame.java         # Root desktop window (1280x820), 4-page router, and background video lifecycle
     │   │   │   ├── component/
-    │   │   │   │   ├── VideoBackgroundPanel.java # Embedded JavaFX MediaPlayer rendering looping hero.mp4 background with cover-scaling
-    │   │   │   │   └── home/                  # Modular landing page components (HeroSection, SearchCapsulePanel, FeaturedDestinationsSection, etc.)
-    │   │   │   └── pages/
-    │   │   │       └── HomeView.java          # Orchestrator landing page with Hero, Featured Destinations, and smart occlusion culling
-    │   │   ├── model/                     # Domain entities, DTOs, and JDBC DAOs (populated as database models are implemented)
-    │   │   ├── controller/                # User action listeners and asynchronous background workers (SwingWorker)
-    │   │   └── util/
-    │   │       ├── AssetManager.java      # Classpath media asset loader with in-memory thread-safe image caching
-    │   │       └── AudioManager.java      # Ambient journey sound manager with infinite looping hero.mp3 playback
+    │   │   │   │   ├── navigation/        # AppHeaderPanel (brand logo, CoreAudio sound menu, 3-tab navigation capsule, profile button)
+    │   │   │   │   ├── train/             # Reusable TrainResultCard & CoachClassPillButton
+    │   │   │   │   ├── card/              # BookingTicketCard (confirmed booking card with berth details and cancellation action)
+    │   │   │   │   ├── selector/          # ModernSmoothDropdown & ModernDatePicker
+    │   │   │   │   ├── home/              # HeroSection, SearchCapsulePanel, FeaturedDestinationsSection
+    │   │   │   │   └── VideoBackgroundPanel.java # JavaFX MediaPlayer looping hero.mp4
+    │   │   │   ├── admin/                 # AdminDashboardView, AdminSidebar, AdminTopBar, AdminStatCard
+    │   │   │   ├── pages/                 # HomeView, TrainsPageView, MyBookingsPageView
+    │   │   │   └── dialog/                # ModernModalDialog, AuthDialog, AdminLoginDialog, BookingDialog, TrainRouteTimetableDialog
+    │   │   ├── model/                     # Domain entities, DTOs, and JDBC DAOs with thread-safe in-memory dev fallbacks
+    │   │   ├── controller/                # AuthController & TrainSearchController (asynchronous SwingWorker tasks)
+    │   │   └── util/                      # AssetManager, AudioManager, PasswordUtils, DatabaseConnectionPool, DatabaseSeeder
     │   │
     │   └── resources/
     │       ├── application.properties.example # DB credentials (URL, user, password), connection pool, and window size defaults
@@ -95,11 +100,26 @@ train-ticket-management-application/
 
 ---
 
-### 3. Initialize Database
-Initialize the database in MySQL:
+### 3. Initialize & Seed Database
+You can initialize the database tables, stations, routes, and admin user using any of the following methods:
+
+#### Method 1: Using the Automated Java Seeder (Recommended)
+```bash
+# Via Maven
+mvn exec:java -Dexec.args="seed"
+
+# Or via RailFlow CLI script
+./RailFlow.command seed
+
+# Or double-click SeedDatabase.command in macOS Finder
+```
+
+#### Method 2: Direct MySQL CLI Import
 ```bash
 mysql -u root -p < src/main/resources/db/schema.sql
 ```
+*(Note: If MySQL is not running locally, RailFlow automatically falls back to an in-memory thread-safe dataset for instant zero-config testing).*
+
 
 ---
 

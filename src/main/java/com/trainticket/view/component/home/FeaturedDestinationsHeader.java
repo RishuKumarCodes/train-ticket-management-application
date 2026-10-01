@@ -19,6 +19,8 @@ import java.awt.geom.Rectangle2D;
  */
 public class FeaturedDestinationsHeader extends JComponent {
 
+    private static final long serialVersionUID = 1L;
+
     private final String watermarkText = "DESTINATION";
     private final String titleText = "Featured Destinations";
 

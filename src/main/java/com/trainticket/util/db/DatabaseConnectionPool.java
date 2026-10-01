@@ -42,8 +42,9 @@ public final class DatabaseConnectionPool {
             }
 
             if (in != null) {
-                props.load(in);
-                in.close();
+                try (InputStream stream = in) {
+                    props.load(stream);
+                }
             } else {
                 throw new IllegalStateException("Neither application.properties nor application.properties.example could be found on classpath!");
             }
@@ -71,7 +72,8 @@ public final class DatabaseConnectionPool {
             logger.info("HikariCP Database Connection Pool initialized successfully.");
 
         } catch (Exception e) {
-            logger.error("Failed to initialize HikariCP connection pool: {}", e.getMessage(), e);
+            logger.info("MySQL database connection unavailable on startup ({}). Operating with in-memory persistence.", e.getMessage());
+            dataSource = null;
         }
     }
 
@@ -105,6 +107,15 @@ public final class DatabaseConnectionPool {
             logger.warn("Database connection test failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Checks if the HikariCP DataSource is currently initialized and open.
+     *
+     * @return true if connection pool is active, false otherwise
+     */
+    public static boolean isAvailable() {
+        return dataSource != null && !dataSource.isClosed();
     }
 
     /**

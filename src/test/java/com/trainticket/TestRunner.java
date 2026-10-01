@@ -26,6 +26,11 @@ public class TestRunner {
         } else {
             testClasses.add(com.trainticket.util.PasswordUtilsTest.class);
             testClasses.add(com.trainticket.service.AuthServiceTest.class);
+            testClasses.add(com.trainticket.service.TrainSearchServiceTest.class);
+            testClasses.add(com.trainticket.service.BookingServiceTest.class);
+            testClasses.add(com.trainticket.model.ModelEntitiesTest.class);
+            testClasses.add(com.trainticket.model.dao.DaoAndSessionTest.class);
+            testClasses.add(com.trainticket.util.DatabaseSeederTest.class);
         }
 
         int totalPassed = 0;

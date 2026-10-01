@@ -26,6 +26,7 @@ import java.net.URL;
  */
 public class VideoBackgroundPanel extends JPanel {
 
+    private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(VideoBackgroundPanel.class);
     private static final String VIDEO_RESOURCE_PATH = "/assets/videos/hero.mp4";
 

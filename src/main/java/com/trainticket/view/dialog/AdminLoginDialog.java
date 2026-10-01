@@ -4,7 +4,6 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.trainticket.controller.AuthController;
 import com.trainticket.model.User;
 import com.trainticket.util.AssetManager;
-import com.trainticket.view.admin.AdminDashboardFrame;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -31,6 +30,8 @@ import java.util.function.Consumer;
  * macOS traffic light controls, smooth fluid animations, and full rounded pill geometry.
  */
 public class AdminLoginDialog extends ModernModalDialog {
+
+    private static final long serialVersionUID = 1L;
 
     private final AuthController authController;
     private final Consumer<User> onAdminAuthenticated;
@@ -129,11 +130,6 @@ public class AdminLoginDialog extends ModernModalDialog {
                     if (onAdminAuthenticated != null) {
                         onAdminAuthenticated.accept(adminUser);
                     }
-                    // Launch Admin Command Center
-                    SwingUtilities.invokeLater(() -> {
-                        AdminDashboardFrame adminFrame = new AdminDashboardFrame();
-                        adminFrame.setVisible(true);
-                    });
                 },
                 errMsg -> {
                     errorLabel.setText(errMsg);

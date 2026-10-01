@@ -29,6 +29,8 @@ import java.util.Arrays;
  */
 public class DestinationImageCard extends JPanel {
 
+    private static final long serialVersionUID = 1L;
+
     private final String imagePath;
     private final String monumentName;  // Bebas Neue ALL CAPS — behind image
     private final String layoutStyle;   // "" | "right" | "staircase"

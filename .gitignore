@@ -47,6 +47,7 @@ out/
 .project
 .classpath
 .classpath.txt
+cp.txt
 .settings/
 
 # BlueJ & NetBeans

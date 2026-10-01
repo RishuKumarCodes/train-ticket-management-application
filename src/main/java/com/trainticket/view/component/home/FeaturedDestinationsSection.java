@@ -20,6 +20,8 @@ import java.awt.RenderingHints;
  */
 public class FeaturedDestinationsSection extends JPanel {
 
+    private static final long serialVersionUID = 1L;
+
     public static final String[][] FEATURED_DESTINATION_IMAGES = {
             { "/assets/images/dal-lake.png",                 "DAL\nLAKE",          "staircase",      "Srinagar, Jammu & Kashmir" },
             { "/assets/images/taj-mahal.png",                "TAJ\nMAHAL",         "staircase",      "Agra, Uttar Pradesh"       },

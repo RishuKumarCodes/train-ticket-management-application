@@ -59,26 +59,28 @@ public class UserDAO {
 
         String cleaned = identifier.trim().toLowerCase();
         String rawTrimmed = identifier.trim();
-        String sql = "SELECT id, username, email, phone, full_name, password_hash, salt, role, status, created_at " +
-                     "FROM users WHERE LOWER(username) = ? OR LOWER(email) = ? OR phone = ? LIMIT 1";
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "SELECT id, username, email, phone, full_name, password_hash, salt, role, status, created_at " +
+                         "FROM users WHERE LOWER(username) = ? OR LOWER(email) = ? OR phone = ? LIMIT 1";
 
-        try (Connection conn = DatabaseConnectionPool.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, cleaned);
-            stmt.setString(2, cleaned);
-            stmt.setString(3, rawTrimmed);
+                stmt.setString(1, cleaned);
+                stmt.setString(2, cleaned);
+                stmt.setString(3, rawTrimmed);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    User user = mapRowToUser(rs);
-                    String hash = rs.getString("password_hash");
-                    String salt = rs.getString("salt");
-                    return Optional.of(new UserRecord(user, hash, salt));
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        User user = mapRowToUser(rs);
+                        String hash = rs.getString("password_hash");
+                        String salt = rs.getString("salt");
+                        return Optional.of(new UserRecord(user, hash, salt));
+                    }
                 }
+            } catch (SQLException ex) {
+                logger.debug("Database query failed ({}), checking in-memory repository for identifier '{}'.", ex.getMessage(), cleaned);
             }
-        } catch (SQLException ex) {
-            logger.warn("Database query failed ({}), checking in-memory repository for identifier '{}'.", ex.getMessage(), cleaned);
         }
 
         // Check in-memory fallback
@@ -109,19 +111,22 @@ public class UserDAO {
         }
 
         String cleaned = username.trim().toLowerCase();
-        String sql = "SELECT 1 FROM users WHERE LOWER(username) = ? LIMIT 1";
 
-        try (Connection conn = DatabaseConnectionPool.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "SELECT 1 FROM users WHERE LOWER(username) = ? LIMIT 1";
 
-            stmt.setString(1, cleaned);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return true;
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                stmt.setString(1, cleaned);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return true;
+                    }
                 }
+            } catch (SQLException ex) {
+                logger.debug("Database query failed ({}), checking in-memory store for username '{}'.", ex.getMessage(), cleaned);
             }
-        } catch (SQLException ex) {
-            logger.warn("Database query failed ({}), checking in-memory store for username '{}'.", ex.getMessage(), cleaned);
         }
 
         return IN_MEMORY_USERS.containsKey(cleaned);
@@ -139,19 +144,22 @@ public class UserDAO {
         }
 
         String cleaned = email.trim().toLowerCase();
-        String sql = "SELECT 1 FROM users WHERE LOWER(email) = ? LIMIT 1";
 
-        try (Connection conn = DatabaseConnectionPool.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "SELECT 1 FROM users WHERE LOWER(email) = ? LIMIT 1";
 
-            stmt.setString(1, cleaned);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return true;
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                stmt.setString(1, cleaned);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return true;
+                    }
                 }
+            } catch (SQLException ex) {
+                logger.debug("Database query failed ({}), checking in-memory store for email '{}'.", ex.getMessage(), cleaned);
             }
-        } catch (SQLException ex) {
-            logger.warn("Database query failed ({}), checking in-memory store for email '{}'.", ex.getMessage(), cleaned);
         }
 
         return IN_MEMORY_USERS.values().stream()
@@ -170,19 +178,22 @@ public class UserDAO {
         }
 
         String cleaned = phone.trim();
-        String sql = "SELECT 1 FROM users WHERE phone = ? LIMIT 1";
 
-        try (Connection conn = DatabaseConnectionPool.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "SELECT 1 FROM users WHERE phone = ? LIMIT 1";
 
-            stmt.setString(1, cleaned);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return true;
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                stmt.setString(1, cleaned);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return true;
+                    }
                 }
+            } catch (SQLException ex) {
+                logger.debug("Database query failed ({}), checking in-memory store for phone '{}'.", ex.getMessage(), cleaned);
             }
-        } catch (SQLException ex) {
-            logger.warn("Database query failed ({}), checking in-memory store for phone '{}'.", ex.getMessage(), cleaned);
         }
 
         return IN_MEMORY_USERS.values().stream()
@@ -199,67 +210,70 @@ public class UserDAO {
      * @throws SQLException if persistence fails
      */
     public User createUser(User user, String passwordHash, String salt) throws SQLException {
-        String sql = "INSERT INTO users (username, email, phone, full_name, password_hash, salt, role, status, created_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "INSERT INTO users (username, email, phone, full_name, password_hash, salt, role, status, created_at) " +
+                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DatabaseConnectionPool.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, user.getUsername());
-            stmt.setString(2, user.getEmail());
-            stmt.setString(3, user.getPhone());
-            stmt.setString(4, user.getFullName());
-            stmt.setString(5, passwordHash);
-            stmt.setString(6, salt);
-            stmt.setString(7, user.getRole().name());
-            stmt.setString(8, user.getStatus());
-            stmt.setTimestamp(9, Timestamp.valueOf(user.getCreatedAt()));
+                stmt.setString(1, user.getUsername());
+                stmt.setString(2, user.getEmail());
+                stmt.setString(3, user.getPhone());
+                stmt.setString(4, user.getFullName());
+                stmt.setString(5, passwordHash);
+                stmt.setString(6, salt);
+                stmt.setString(7, user.getRole().name());
+                stmt.setString(8, user.getStatus());
+                stmt.setTimestamp(9, Timestamp.valueOf(user.getCreatedAt()));
 
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Creating user failed, no rows affected.");
-            }
-
-            long generatedId;
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    generatedId = generatedKeys.getLong(1);
-                } else {
-                    throw new SQLException("Creating user failed, no ID obtained.");
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0) {
+                    throw new SQLException("Creating user failed, no rows affected.");
                 }
+
+                long generatedId;
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        generatedId = generatedKeys.getLong(1);
+                    } else {
+                        throw new SQLException("Creating user failed, no ID obtained.");
+                    }
+                }
+
+                User persisted = new User(
+                        generatedId,
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getPhone(),
+                        user.getFullName(),
+                        user.getRole(),
+                        user.getStatus(),
+                        user.getCreatedAt()
+                );
+
+                // Also keep in-memory cache synchronized
+                saveToMemoryFallback(persisted, passwordHash, salt);
+                return persisted;
+
+            } catch (SQLException ex) {
+                logger.debug("Database insert failed ({}); persisting to in-memory fallback repository.", ex.getMessage());
             }
-
-            User persisted = new User(
-                    generatedId,
-                    user.getUsername(),
-                    user.getEmail(),
-                    user.getPhone(),
-                    user.getFullName(),
-                    user.getRole(),
-                    user.getStatus(),
-                    user.getCreatedAt()
-            );
-
-            // Also keep in-memory cache synchronized
-            saveToMemoryFallback(persisted, passwordHash, salt);
-            return persisted;
-
-        } catch (SQLException ex) {
-            logger.warn("Database insert failed ({}); persisting to in-memory fallback repository.", ex.getMessage());
-            long newId = ID_GENERATOR.incrementAndGet();
-            User fallbackUser = new User(
-                    newId,
-                    user.getUsername(),
-                    user.getEmail(),
-                    user.getPhone(),
-                    user.getFullName(),
-                    user.getRole(),
-                    user.getStatus(),
-                    user.getCreatedAt()
-            );
-            saveToMemoryFallback(fallbackUser, passwordHash, salt);
-            return fallbackUser;
         }
+
+        long newId = ID_GENERATOR.incrementAndGet();
+        User fallbackUser = new User(
+                newId,
+                user.getUsername(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getFullName(),
+                user.getRole(),
+                user.getStatus(),
+                user.getCreatedAt()
+        );
+        saveToMemoryFallback(fallbackUser, passwordHash, salt);
+        return fallbackUser;
     }
 
     private void saveToMemoryFallback(User user, String hash, String salt) {

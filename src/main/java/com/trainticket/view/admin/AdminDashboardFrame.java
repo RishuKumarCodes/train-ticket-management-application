@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
  */
 public class AdminDashboardFrame extends JFrame {
 
+    private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(AdminDashboardFrame.class);
 
     private JPanel mainContentCard;
@@ -237,9 +238,7 @@ public class AdminDashboardFrame extends JFrame {
 
         // Active Trains Operational Table Container (Borderless card with 50px radius)
         JPanel tableContainer = new JPanel(new BorderLayout(0, 14));
-        tableContainer.setBackground(Color.WHITE);
-        tableContainer.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 50; background: #FFFFFF; borderWidth: 0; dropShadow: true;");
+        tableContainer.putClientProperty(FlatClientProperties.STYLE, "arc: 50; background: #FFFFFF;");
         tableContainer.setBorder(new EmptyBorder(22, 28, 22, 28));
 
         JLabel tableTitle = new JLabel("PRIORITY EXPRESS TRAIN ROSTERS (LIVE FLEET)");
@@ -313,9 +312,7 @@ public class AdminDashboardFrame extends JFrame {
 
     private JPanel createMetricCard(String title, String val, String subtitle, Color accent) {
         JPanel card = new JPanel(new BorderLayout(0, 4));
-        card.setBackground(Color.WHITE);
-        card.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 50; background: #FFFFFF; borderWidth: 0; dropShadow: true;");
+        card.putClientProperty(FlatClientProperties.STYLE, "arc: 50; background: #FFFFFF;");
         card.setBorder(new EmptyBorder(18, 22, 18, 22));
 
         JLabel titleLabel = new JLabel(title);
@@ -353,10 +350,8 @@ public class AdminDashboardFrame extends JFrame {
 
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(Color.WHITE);
-        card.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 24; background: #FFFFFF; borderWidth: 1; borderColor: #E2E8F0; dropShadow: true;");
-        card.setBorder(new EmptyBorder(36, 44, 36, 44));
+        card.putClientProperty(FlatClientProperties.STYLE, "arc: 24; background: #FFFFFF;");
+        card.setBorder(new com.formdev.flatlaf.ui.FlatLineBorder(new Insets(36, 44, 36, 44), new Color(226, 232, 240), 1, 24));
 
         JLabel t = new JLabel(title);
         t.setFont(AssetManager.getFont("Roboto", Font.BOLD, 18f));

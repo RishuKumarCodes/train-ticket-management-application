@@ -18,6 +18,11 @@ public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
+        if (args != null && args.length > 0 && ("seed".equalsIgnoreCase(args[0]) || "--seed".equalsIgnoreCase(args[0]))) {
+            com.trainticket.util.db.DatabaseSeeder.main(args);
+            return;
+        }
+
         logger.info("Starting RailFlow Train Ticket Management Application...");
 
         // 1. macOS specific platform properties

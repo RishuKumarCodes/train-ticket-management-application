@@ -16,7 +16,22 @@
 
 ## 2. Step-by-Step Installation
 
-### Step 1: Database Setup
+### Step 1: Database Setup & Seeding
+
+RailFlow provides multiple automated ways to seed database tables, master stations, trains, and routes:
+
+#### Option A: Automated Java Seeder (Recommended)
+```bash
+# Seed via Maven command
+mvn exec:java -Dexec.args="seed"
+
+# Or via the RailFlow macOS CLI launcher
+./RailFlow.command seed
+
+# Or double-click SeedDatabase.command in macOS Finder
+```
+
+#### Option B: Direct MySQL Console Execution
 1. Log in to MySQL console:
    ```bash
    mysql -u root -p
@@ -25,6 +40,8 @@
    ```sql
    source src/main/resources/db/schema.sql;
    ```
+
+*(Note: If MySQL is not running on your development workstation, RailFlow automatically detects this and gracefully falls back to a thread-safe in-memory dataset with 18 stations, 7 iconic express trains, and admin account, so you can explore without a local database).*
 
 ### Step 2: Configure Application Credentials
 1. Copy the example configuration template:
@@ -37,15 +54,23 @@
 ### Step 3: Run the Application
 You can run the application using any of the following methods:
 
-#### Method A: From Terminal via Maven
+#### Method A: Interactive macOS Launcher (Double-Clickable)
+Double-click `RailFlow.command` in macOS Finder (or run `./RailFlow.command` in terminal). It offers a 2-option prompt that automatically launches the desktop application after 4 seconds if no selection is made.
+
+#### Method B: From Terminal via Maven
 ```bash
-mvn clean compile exec:java
+mvn exec:java
 ```
 
-#### Method B: Directly in Your IDE (VS Code / IntelliJ)
+#### Method C: Continuous Live-Reload Dev Mode
+```bash
+./dev.sh
+```
+
+#### Method D: Directly in Your IDE (IntelliJ / VS Code)
 Open `src/main/java/com/trainticket/Main.java` and click the **Run ▶** button above `public static void main(String[] args)`.
 
-#### Method C: Via Compiled Executable (.jar)
+#### Method E: Via Compiled Standalone Executable (.jar)
 ```bash
 # Compile and assemble standalone fat JAR
 mvn clean package
@@ -53,4 +78,5 @@ mvn clean package
 # Run the packaged JAR
 java -jar target/train-ticket-management-1.0.0-SNAPSHOT.jar
 ```
+
 

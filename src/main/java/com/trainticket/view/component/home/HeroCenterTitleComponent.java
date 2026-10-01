@@ -23,6 +23,8 @@ import java.awt.Shape;
  */
 public class HeroCenterTitleComponent extends JComponent {
 
+    private static final long serialVersionUID = 1L;
+
     private final String eyebrowPrefix = "D I S C O V E R   Y O U R   ";
     private final String eyebrowNext = "N E X T";
     private static final String[] WORDS = { "ADVENTURE", "EXPERIENCE", "JOURNEY", "MEMORY" };

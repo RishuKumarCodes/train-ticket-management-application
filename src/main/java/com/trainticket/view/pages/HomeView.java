@@ -33,6 +33,8 @@ import java.awt.RenderingHints;
  */
 public class HomeView extends JPanel {
 
+    private static final long serialVersionUID = 1L;
+
     private HeroSection heroSection;
     private FeaturedDestinationsSection destinationsSection;
     private JScrollPane scrollPane;

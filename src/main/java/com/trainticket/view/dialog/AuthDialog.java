@@ -39,6 +39,8 @@ import java.util.function.Consumer;
  */
 public class AuthDialog extends ModernModalDialog {
 
+    private static final long serialVersionUID = 1L;
+
     private final AuthController authController;
     private final Consumer<User> onAuthenticated;
 
