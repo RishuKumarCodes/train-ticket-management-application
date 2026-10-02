@@ -1,6 +1,7 @@
 # Database Design & Persistence Strategy
 ## RailFlow — Train Ticket Management Application
-**Document Status:** Working Draft (To be evolved iteratively alongside code)
+**Document Status:** Complete (Synced with live schema)  
+**Detailed Tables Reference:** [SQL Tables Reference Manual](sql-tables-reference.md)
 
 ---
 
