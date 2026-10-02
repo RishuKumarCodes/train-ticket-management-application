@@ -96,6 +96,19 @@ public class AppHeaderPanel extends JPanel {
                 SwingUtilities.invokeLater(this::updateAuthButton));
     }
 
+    /** Compatibility constructor for callers passing legacy PNR status callback. */
+    public AppHeaderPanel(Runnable onHomeAction,
+                          Runnable onTrainsAction,
+                          Runnable onPnrStatusAction,
+                          Runnable onMyBookingsAction,
+                          Runnable onPlanTripAction,
+                          Runnable onOpenAuthAction,
+                          Runnable onSwitchToAdminAction,
+                          Runnable onSignOutAction) {
+        this(onHomeAction, onTrainsAction, onMyBookingsAction, onPlanTripAction,
+                onOpenAuthAction, onSwitchToAdminAction, onSignOutAction);
+    }
+
     private void initComponents() {
         // 1. Brand Logo Left (icon-wide-white.png / icon-wide.png) + Circular White Music Toggle Button
         JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
@@ -559,13 +572,15 @@ public class AppHeaderPanel extends JPanel {
             }
         };
 
-        btn.setPreferredSize(new Dimension(130, 42));
+        btn.setPreferredSize(new Dimension(115, 42));
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.addActionListener(e -> {
-            setActiveTab(tabIndex);
+            if (tabIndex >= 0) {
+                setActiveTab(tabIndex);
+            }
             if (onClick != null) onClick.run();
         });
         return btn;

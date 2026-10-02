@@ -45,6 +45,18 @@ public class HeroCenterTitleComponent extends JComponent {
 
     private final javax.swing.Timer animTimer;
 
+    // Layout & Font metrics caching to eliminate per-frame allocations & FreeType lookups
+    private int cachedW = -1;
+    private int cachedH = -1;
+    private Font cachedWordFont;
+    private FontMetrics cachedWordFm;
+    private Font cachedEyebrowFont;
+    private FontMetrics cachedEyebrowFm;
+    private int cachedStartEyeX, cachedEyeY, cachedHighlightX, cachedHighlightY, cachedHighlightW, cachedHighlightH;
+    private int cachedClipBoxY, cachedClipBoxH, cachedAdvBaselineY, cachedTravelDistance;
+    private final java.util.Map<String, int[]> charAdvanceMap = new java.util.HashMap<>();
+    private final java.util.Map<String, Integer> wordWidthMap = new java.util.HashMap<>();
+
     public HeroCenterTitleComponent() {
         setOpaque(false);
         phaseStartTime = System.currentTimeMillis();
@@ -53,7 +65,11 @@ public class HeroCenterTitleComponent extends JComponent {
             if (needsRepaint && isShowing()) {
                 Rectangle visible = getVisibleRect();
                 if (!visible.isEmpty()) {
-                    repaint();
+                    if (cachedClipBoxH > 0) {
+                        repaint(0, Math.max(0, cachedClipBoxY - 4), getWidth(), cachedClipBoxH + 8);
+                    } else {
+                        repaint();
+                    }
                 }
             }
         });
@@ -125,21 +141,13 @@ public class HeroCenterTitleComponent extends JComponent {
         return 1.0f - (inv * inv * inv * inv * inv * inv);
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-
-        int w = getWidth();
-        int h = getHeight();
-        if (w <= 0 || h <= 0) {
-            g2.dispose();
+    private void ensureLayoutCached(int w, int h, Graphics2D g2) {
+        if (cachedW == w && cachedH == h && cachedWordFont != null) {
             return;
         }
+        cachedW = w;
+        cachedH = h;
 
-        // 1. Calculate base display font size anchored to 68% viewport width for "ADVENTURE"
         float targetWidth = w * 0.68f;
         Font baseBebas = AssetManager.getFont("Bebas Neue", Font.PLAIN, 100f);
         FontMetrics baseFm = g2.getFontMetrics(baseBebas);
@@ -148,130 +156,157 @@ public class HeroCenterTitleComponent extends JComponent {
         float advFontSize = 160f;
         if (refStrWidth > 0) {
             advFontSize = (targetWidth / refStrWidth) * 100f;
-            // Height safety clamp for vertically constrained viewports
             float maxFontSizeByHeight = (h - 70) * 0.62f;
             if (advFontSize > maxFontSizeByHeight) {
                 advFontSize = maxFontSizeByHeight;
             }
         }
 
-        Font wordFont = baseBebas.deriveFont(advFontSize);
-        FontMetrics wordFm = g2.getFontMetrics(wordFont);
+        cachedWordFont = baseBebas.deriveFont(advFontSize);
+        cachedWordFm = g2.getFontMetrics(cachedWordFont);
 
-        // 2. Eyebrow font dynamically sized to complement the display title
         float eyebrowFontSize = Math.max(13f, Math.min(20f, advFontSize * 0.080f));
-        Font eyebrowFont = AssetManager.getFont("Roboto", Font.BOLD, eyebrowFontSize);
-        FontMetrics eyebrowFm = g2.getFontMetrics(eyebrowFont);
+        cachedEyebrowFont = AssetManager.getFont("Roboto", Font.BOLD, eyebrowFontSize);
+        cachedEyebrowFm = g2.getFontMetrics(cachedEyebrowFont);
 
-        int wordAscent = wordFm.getAscent();
-        int wordDescent = wordFm.getDescent();
-        int eyeAscent = eyebrowFm.getAscent();
-        int eyeDescent = eyebrowFm.getDescent();
+        int wordAscent = cachedWordFm.getAscent();
+        int wordDescent = cachedWordFm.getDescent();
+        int eyeAscent = cachedEyebrowFm.getAscent();
+        int eyeDescent = cachedEyebrowFm.getDescent();
 
-        int prefixW = eyebrowFm.stringWidth(eyebrowPrefix);
-        int nextW = eyebrowFm.stringWidth(eyebrowNext);
-        int padX = 3; // 3px horizontal padding on either side
+        int prefixW = cachedEyebrowFm.stringWidth(eyebrowPrefix);
+        int nextW = cachedEyebrowFm.stringWidth(eyebrowNext);
+        int padX = 3;
         int totalEyebrowW = prefixW + nextW + (padX * 2);
-        int startEyeX = (w - totalEyebrowW) / 2;
+        cachedStartEyeX = (w - totalEyebrowW) / 2;
 
         int gap = eyeDescent + 4;
         int totalContentH = eyeAscent + gap + wordAscent;
         int startY = Math.max(20, (h - totalContentH) / 2);
 
-        int eyeY = startY + eyeAscent;
-        int highlightX = startEyeX + prefixW;
-        int highlightY = eyeY - eyeAscent;
-        int highlightW = nextW + (padX * 2);
-        int highlightH = eyeAscent + eyeDescent;
+        cachedEyeY = startY + eyeAscent;
+        cachedHighlightX = cachedStartEyeX + prefixW;
+        cachedHighlightY = cachedEyeY - eyeAscent;
+        cachedHighlightW = nextW + (padX * 2);
+        cachedHighlightH = eyeAscent + eyeDescent;
 
-        // 3. Draw Eyebrow - prefix in crisp pure white
-        g2.setFont(eyebrowFont);
+        cachedClipBoxY = cachedEyeY + eyeDescent + 1;
+        cachedAdvBaselineY = cachedEyeY + gap + wordAscent;
+        cachedClipBoxH = wordAscent + wordDescent + 14;
+        cachedTravelDistance = wordAscent + 32;
+
+        charAdvanceMap.clear();
+        wordWidthMap.clear();
+        for (String word : WORDS) {
+            wordWidthMap.put(word, cachedWordFm.stringWidth(word));
+            int[] advances = new int[word.length()];
+            for (int i = 0; i < word.length(); i++) {
+                advances[i] = cachedWordFm.stringWidth(word.substring(0, i));
+            }
+            charAdvanceMap.put(word, advances);
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int w = getWidth();
+        int h = getHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+        ensureLayoutCached(w, h, g2);
+
+        // 1. Draw Eyebrow - prefix in crisp pure white
+        g2.setFont(cachedEyebrowFont);
         g2.setColor(Color.WHITE);
-        g2.drawString(eyebrowPrefix, startEyeX, eyeY);
+        g2.drawString(eyebrowPrefix, cachedStartEyeX, cachedEyeY);
 
         // Draw square white highlight background (3px horizontal padding on either side)
-        g2.fillRect(highlightX, highlightY, highlightW, highlightH);
+        g2.fillRect(cachedHighlightX, cachedHighlightY, cachedHighlightW, cachedHighlightH);
 
         // Draw highlighted NEXT text in brand orange (#FA5909)
         g2.setColor(new Color(250, 89, 9));
-        g2.drawString(eyebrowNext, highlightX + padX, eyeY);
+        g2.drawString(eyebrowNext, cachedHighlightX + 3, cachedEyeY);
 
-        // 4. Invisible Box Mask (strictly below eyebrow highlight)
-        int clipBoxY = eyeY + eyeDescent + 1;
-        int advBaselineY = eyeY + gap + wordAscent;
-        int clipBoxH = wordAscent + wordDescent + 14;
-        int travelDistance = wordAscent + 32;
-
+        // 2. Invisible Box Mask (strictly below eyebrow highlight)
         Shape originalClip = g2.getClip();
-        g2.clipRect(0, clipBoxY, w, clipBoxH);
+        g2.clipRect(0, cachedClipBoxY, w, cachedClipBoxH);
 
-        g2.setFont(wordFont);
+        g2.setFont(cachedWordFont);
         g2.setColor(Color.WHITE);
 
         long elapsed = System.currentTimeMillis() - phaseStartTime;
 
         if (animState == STATE_ENTER) {
             String currentWord = WORDS[wordIndex];
-            int totalWordWidth = wordFm.stringWidth(currentWord);
+            int totalWordWidth = wordWidthMap.getOrDefault(currentWord, 0);
             int wordStartX = (w - totalWordWidth) / 2;
+            int[] advances = charAdvanceMap.get(currentWord);
 
             for (int i = 0; i < currentWord.length(); i++) {
                 char ch = currentWord.charAt(i);
-                int charX = wordStartX + wordFm.stringWidth(currentWord.substring(0, i));
+                int charX = wordStartX + (advances != null ? advances[i] : 0);
 
                 long charStart = i * STAGGER_DELAY_MS;
                 if (elapsed >= charStart) {
                     float progress = Math.min(1.0f, (float) (elapsed - charStart) / CHAR_DURATION_MS);
                     float eased = easeOutSextic(progress);
-                    float yOffset = (1.0f - eased) * travelDistance;
-                    g2.drawString(String.valueOf(ch), charX, advBaselineY + Math.round(yOffset));
+                    float yOffset = (1.0f - eased) * cachedTravelDistance;
+                    g2.drawString(String.valueOf(ch), charX, cachedAdvBaselineY + Math.round(yOffset));
                 }
             }
         } else if (animState == STATE_HOLD) {
             String currentWord = WORDS[wordIndex];
-            int totalWordWidth = wordFm.stringWidth(currentWord);
+            int totalWordWidth = wordWidthMap.getOrDefault(currentWord, 0);
             int wordStartX = (w - totalWordWidth) / 2;
 
-            g2.drawString(currentWord, wordStartX, advBaselineY);
+            g2.drawString(currentWord, wordStartX, cachedAdvBaselineY);
         } else if (animState == STATE_TRANSITION) {
             String outWord = WORDS[wordIndex];
             int nextWordIndex = (wordIndex + 1) % WORDS.length;
             String inWord = WORDS[nextWordIndex];
 
-            int outWordWidth = wordFm.stringWidth(outWord);
+            int outWordWidth = wordWidthMap.getOrDefault(outWord, 0);
             int outStartX = (w - outWordWidth) / 2;
+            int[] outAdvances = charAdvanceMap.get(outWord);
 
-            int inWordWidth = wordFm.stringWidth(inWord);
+            int inWordWidth = wordWidthMap.getOrDefault(inWord, 0);
             int inStartX = (w - inWordWidth) / 2;
+            int[] inAdvances = charAdvanceMap.get(inWord);
 
             // 1. Paint Outgoing Characters (rising upward out of frame one-by-one, solid white, masked by clip)
             for (int i = 0; i < outWord.length(); i++) {
                 char ch = outWord.charAt(i);
-                int charX = outStartX + wordFm.stringWidth(outWord.substring(0, i));
+                int charX = outStartX + (outAdvances != null ? outAdvances[i] : 0);
 
                 long charStart = i * STAGGER_DELAY_MS;
                 if (elapsed >= charStart) {
                     float progress = Math.min(1.0f, (float) (elapsed - charStart) / EXIT_CHAR_DURATION_MS);
                     float eased = easeOutSextic(progress);
-                    float yOffset = -eased * travelDistance;
-                    g2.drawString(String.valueOf(ch), charX, advBaselineY + Math.round(yOffset));
+                    float yOffset = -eased * cachedTravelDistance;
+                    g2.drawString(String.valueOf(ch), charX, cachedAdvBaselineY + Math.round(yOffset));
                 } else {
-                    // Letter remains in place before its staggered lift begins
-                    g2.drawString(String.valueOf(ch), charX, advBaselineY);
+                    g2.drawString(String.valueOf(ch), charX, cachedAdvBaselineY);
                 }
             }
 
             // 2. Paint Incoming Characters (rising from bottom, solid white, masked by clip)
             for (int j = 0; j < inWord.length(); j++) {
                 char ch = inWord.charAt(j);
-                int charX = inStartX + wordFm.stringWidth(inWord.substring(0, j));
+                int charX = inStartX + (inAdvances != null ? inAdvances[j] : 0);
 
                 long inCharStart = INCOMING_START_DELAY_MS + (j * STAGGER_DELAY_MS);
                 if (elapsed >= inCharStart) {
                     float progress = Math.min(1.0f, (float) (elapsed - inCharStart) / CHAR_DURATION_MS);
                     float eased = easeOutSextic(progress);
-                    float yOffset = (1.0f - eased) * travelDistance;
-                    g2.drawString(String.valueOf(ch), charX, advBaselineY + Math.round(yOffset));
+                    float yOffset = (1.0f - eased) * cachedTravelDistance;
+                    g2.drawString(String.valueOf(ch), charX, cachedAdvBaselineY + Math.round(yOffset));
                 }
             }
         }

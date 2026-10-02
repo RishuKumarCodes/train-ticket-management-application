@@ -47,8 +47,8 @@ train-ticket-management-application/
     │   │   │   │   ├── home/              # HeroSection, SearchCapsulePanel, FeaturedDestinationsSection
     │   │   │   │   └── VideoBackgroundPanel.java # JavaFX MediaPlayer looping hero.mp4
     │   │   │   ├── admin/                 # AdminDashboardView, AdminSidebar, AdminTopBar, AdminStatCard
-    │   │   │   ├── pages/                 # HomeView, TrainsPageView, MyBookingsPageView
-    │   │   │   └── dialog/                # ModernModalDialog, AuthDialog, AdminLoginDialog, BookingDialog, TrainRouteTimetableDialog
+    │   │   │   ├── pages/                 # HomeView, TrainSearchResultsView, TrainsPageView, MyBookingsPageView, PlanMyTripView
+    │   │   │   └── dialog/                # ModernModalDialog, AuthDialog, AdminLoginDialog, BookingDialog, LiveTrainTrackerDialog, ETicketPassDialog, SavedPassengersDialog
     │   │   ├── model/                     # Domain entities, DTOs, and JDBC DAOs with thread-safe in-memory dev fallbacks
     │   │   ├── controller/                # AuthController & TrainSearchController (asynchronous SwingWorker tasks)
     │   │   └── util/                      # AssetManager, AudioManager, PasswordUtils, DatabaseConnectionPool, DatabaseSeeder

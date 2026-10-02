@@ -86,6 +86,10 @@ public abstract class ModernModalDialog extends JDialog {
         headerTitleLabel.setText(title);
     }
 
+    public String getHeaderTitleText() {
+        return headerTitleLabel != null ? headerTitleLabel.getText() : "";
+    }
+
     /**
      * Returns the inner content panel where subclasses should add their form
      * controls. Add to {@code BorderLayout.CENTER} or use a nested panel.
@@ -115,10 +119,9 @@ public abstract class ModernModalDialog extends JDialog {
         field.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
         field.setForeground(new Color(15, 23, 42));
         field.setCaretColor(new Color(250, 89, 9));
-        field.setBorder(new EmptyBorder(0, 18, 0, 18));
         field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         field.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 999; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
+                "arc: 999; margin: 0,16,0,16; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
                 "focusedBorderColor: #FA5909; focusedBackground: #FFFFFF;");
         return field;
     }
@@ -131,12 +134,17 @@ public abstract class ModernModalDialog extends JDialog {
         field.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
         field.setForeground(new Color(15, 23, 42));
         field.setCaretColor(new Color(250, 89, 9));
-        field.setBorder(new EmptyBorder(0, 18, 0, 18));
         field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         field.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 999; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
+                "arc: 999; margin: 0,16,0,16; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
                 "focusedBorderColor: #FA5909; focusedBackground: #FFFFFF;");
         return field;
+    }
+
+    public static JButton createPillButton(String text, Color baseColor, Color textColor) {
+        Color hoverColor = baseColor.equals(Color.WHITE) ? new Color(241, 245, 249) : baseColor.darker();
+        Color pressedColor = baseColor.equals(Color.WHITE) ? new Color(226, 232, 240) : baseColor.darker().darker();
+        return createPillButton(text, baseColor, hoverColor, pressedColor, textColor);
     }
 
     /**
@@ -181,6 +189,7 @@ public abstract class ModernModalDialog extends JDialog {
         };
         btn.setPreferredSize(new Dimension(320, 44));
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
         btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);

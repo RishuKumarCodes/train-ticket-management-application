@@ -76,9 +76,71 @@ RailFlow utilizes a multi-layer verification strategy:
   - Status: **Passed**
 
 ### 2.9 Static Analysis & Compiler Verification (`TC-LINT`)
-- **`TC-LINT-01`**: Zero compilation warnings under `javac -Xlint:all` across all 60 main source files and 7 test files.
+- **`TC-LINT-01`**: Zero compilation warnings under `javac -Xlint:all` across all 74 main source files and 10 test files.
   - Verifies presence of `serialVersionUID` on all custom Swing classes, valid try-with-resources stream references, and absence of raw types or unchecked casts.
-  - Status: **Passed** (0 warnings, 0 errors across 67 targets)
+  - Status: **Passed** (0 warnings, 0 errors across 84 targets)
+
+### 2.10 Interactive Coach Seat Map & Mock Payment Gateway (`TC-SEAT` / `TC-PAY`)
+- **`TC-SEAT-01`**: Verify SeatButton berth abbreviations, state transitions (AVAILABLE, SELECTED, BOOKED), disabled state on BOOKED, and CoachSeatMapPanel capacity constraint enforcement.
+  - Test Suite: `com.trainticket.service.SeatAndPaymentTest` (`testSeatButtonCreation`, `testSeatButtonStateTransitions`, `testCoachSeatMapCapacity`, `testSelectedSeatRecord`)
+  - Status: **Passed** (4/4 tests verified)
+- **`TC-PAY-01`**: Verify PaymentResult record immutability, payment method capture, amount precision, and transaction identifier generation.
+  - Test Suite: `com.trainticket.service.SeatAndPaymentTest` (`testPaymentResultRecord`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-PNR-01`**: Verify standalone PNR search normalization (hyphens/spaces), retrieval of pre-seeded CNF/RAC/WL bookings, and real-time cancellation.
+  - Test Suite: `com.trainticket.service.BookingServiceTest` (`testNormalizedPnrSearch`, `testSamplePnrSeedData`, `testCancelBooking`)
+  - Status: **Passed** (3/3 tests verified)
+
+### 2.11 Fleet Operations, Digital Pass, Inventory & CSV Export (`TC-FLEET` / `TC-PASS`)
+- **`TC-FLEET-01`**: Verify train commissioning, operational status updates, delay adjustments, and deletion.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testAddTrain`, `testUpdateTrainStatus`, `testDeleteTrain`)
+  - Status: **Passed** (3/3 tests verified)
+- **`TC-INV-01`**: Verify real-time seat inventory decrement on booking creation and seat replenishment on booking cancellation.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testSeatInventoryDecrementAndReplenish`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-PAS-01`**: Verify frequent co-travelers master list retrieval, saving new passenger records, and user isolation.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testPassengerMasterRecordAndDAO`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-CSV-01`**: Verify RFC 4180-compliant CSV manifest generation, header formatting, special character escaping, and file output.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testCsvManifestExport`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-PASS-01`**: Verify ETicketPassDialog and LiveTrainTrackerDialog headless mode instantiation safety and getter contracts.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testETicketPassDialogHeadlessSafety`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-TRN-06`**: Verify search by train number (exact/prefix) and train name substring, plus full journey result creation.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testSearchByTrainNumberOrName`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-USR-04`**: Verify SavedPassengersDialog class presence, SearchMode enum contracts, and PassengerMasterDAO add/delete lifecycle.
+  - Test Suite: `com.trainticket.service.AdminFleetAndTicketPassTest` (`testSavedPassengersDialogAndSearchMode`)
+  - Status: **Passed** (1/1 test verified)
+
+### 2.12 Featured Destinations & Interactive Trip Planning (`TC-DST-01` / `TC-ADM-09`)
+- **`TC-DST-01`**: Verify default seed featured destinations in DAO, single-line destination formatting, and TrainDAO `hasRoute` / `hasRouteOnDate` connectivity checking (validating origin-destination pairs like NDLS -> AGC, prohibiting same-station loops, and handling daily trains).
+  - Test Suite: `com.trainticket.service.FeaturedDestinationFlowTest` (`testDefaultSeedDestinations`, `testTrainRouteConnectivity`, `testDestinationFormatting`)
+  - Status: **Passed** (3/3 tests verified)
+- **`TC-ADM-09`**: Verify administrator destination lifecycle (adding new featured destinations, auto-increment IDs, reactive change listener firing, and subsequent removal).
+  - Test Suite: `com.trainticket.service.FeaturedDestinationFlowTest` (`testAddAndRemoveDestinationLifecycle`)
+  - Status: **Passed** (1/1 test verified)
+
+### 2.13 Admin Analytics Overview & Vector Charts (`TC-ADM-10` to `TC-ADM-15`)
+- **`TC-ADM-10` / `TC-ADM-13`**: Verify AdminDashboardView headless instantiation, `CardLayout` section switching, live metrics refresh, and stopLiveClock timer termination.
+  - Test Suite: `com.trainticket.view.AdminAnalyticsOverviewTest` (`testAdminDashboardViewLifecycle`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-ADM-11`**: Verify AnalyticsLineChart vector rendering, cubic spline curve calculation, gradient fills, and data point updates.
+  - Test Suite: `com.trainticket.view.AdminAnalyticsOverviewTest` (`testAnalyticsLineChart`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-ADM-12`**: Verify AnalyticsDonutChart multi-segment ring rendering, slice separator gaps, central callout typography, and legend alignment.
+  - Test Suite: `com.trainticket.view.AdminAnalyticsOverviewTest` (`testAnalyticsDonutChart`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-ADM-13`**: Verify AnalyticsBarChart 24-hour departure histogram, capsule bar rendering, and peak rush hour highlighting.
+  - Test Suite: `com.trainticket.view.AdminAnalyticsOverviewTest` (`testAnalyticsBarChart`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-ADM-14`**: Verify AdminStatCard 50px corner radius, multi-tier ambient shadow painting, value formatting, and trend subtext badge pills.
+  - Test Suite: `com.trainticket.view.AdminAnalyticsOverviewTest` (`testAdminStatCard`)
+  - Status: **Passed** (1/1 test verified)
+- **`TC-ADM-15`**: Verify 100% real data mathematical integrity, dynamic DayOfWeek revenue and passenger trajectory plotting, and raw seat capacity to percentage legend calculations.
+  - Test Suite: `com.trainticket.view.AdminAnalyticsOverviewTest` (`testRealDataIntegrity`)
+  - Status: **Passed** (1/1 test verified)
 
 ---
 
@@ -86,14 +148,22 @@ RailFlow utilizes a multi-layer verification strategy:
 
 | Test Suite Class | Total Tests | Passed | Failed | Execution Time |
 |---|---|---|---|---|
-| `javac -Xlint:all` (Compiler & Lint) | 67 source files | 67 clean | 0 | 1.1 s |
+| `javac -Xlint:all` (Compiler & Lint) | 87 source files | 87 clean | 0 | 2.2 s |
 | `PasswordUtilsTest` | 3 | 3 | 0 | 110 ms |
 | `AuthServiceTest` | 9 | 9 | 0 | 35 ms |
-| `TrainSearchServiceTest` | 10 | 10 | 0 | 40 ms |
-| `BookingServiceTest` | 5 | 5 | 0 | 25 ms |
+| `TrainSearchServiceTest` | 10 | 10 | 0 | 45 ms |
+| `BookingServiceTest` | 7 | 7 | 0 | 25 ms |
+| `SeatAndPaymentTest` | 5 | 5 | 0 | 30 ms |
 | `ModelEntitiesTest` | 14 | 14 | 0 | 30 ms |
 | `DaoAndSessionTest` | 7 | 7 | 0 | 35 ms |
 | `DatabaseSeederTest` | 3 | 3 | 0 | 20 ms |
-| **Total Test Suite** | **51 unit tests + 67 compilation targets** | **51 Passed** | **0** | **< 1.8 s** |
+| `AdminFleetAndTicketPassTest` | 9 | 9 | 0 | 35 ms |
+| `ResponsiveCardGridLayoutTest` | 4 | 4 | 0 | 45 ms |
+| `FeaturedDestinationFlowTest` | 4 | 4 | 0 | 20 ms |
+| `CancellationRefundTest` | 4 | 4 | 0 | 25 ms |
+| `AdminAnalyticsOverviewTest` | 6 | 6 | 0 | 45 ms |
+| **Total Test Suite** | **86 unit tests + 87 compilation targets** | **86 Passed** | **0** | **< 2.8 s** |
+
+
 
 

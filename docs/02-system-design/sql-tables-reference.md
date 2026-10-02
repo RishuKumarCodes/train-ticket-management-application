@@ -1,13 +1,13 @@
 # RailFlow — SQL Database Tables Reference Manual
 **Document Status:** Complete SQL Schema & Data Dictionary Reference  
 **Dialect:** MySQL 8.x / ANSI SQL  
-**Associated Files:** [`schema.sql`](../../src/main/resources/db/schema.sql) | [`seed_data.sql`](../../src/main/resources/db/seed_data.sql) | [`database-design.md`](database-design.md)
+**Associated Files:** [`schema.sql`](../../src/main/resources/db/schema.sql) | [`database-design.md`](database-design.md)
 
 ---
 
 ## 1. Schema Overview
 
-RailFlow utilizes **7 relational tables** normalized to Third Normal Form (3NF) to manage the entire train booking lifecycle:
+RailFlow utilizes **8 relational tables** normalized to Third Normal Form (3NF) to manage the entire train booking lifecycle:
 
 | # | Table Name | Purpose / Responsibility | Primary Key | Foreign Key Dependencies |
 |---|---|---|---|---|
@@ -18,6 +18,7 @@ RailFlow utilizes **7 relational tables** normalized to Third Normal Form (3NF) 
 | **5** | [`train_classes`](#5-train_classes) | Seating inventory, travel classes (`1A`, `2A`, `3A`, `SL`, `CC`, `EC`), quotas, and base fares | `id` | `train_id` &rarr; `trains(id)` |
 | **6** | [`bookings`](#6-bookings) | Passenger reservations, 10-digit unique PNR codes, travel dates, itinerary, and payment totals | `id` | `user_id` &rarr; `users(id)`<br>`train_id` &rarr; `trains(id)`<br>`from_station_id` &rarr; `stations(id)`<br>`to_station_id` &rarr; `stations(id)` |
 | **7** | [`booking_passengers`](#7-booking_passengers) | Manifest of individual travelers per ticket (up to 6 pax), berth preferences, and assigned coach/seat numbers | `id` | `booking_id` &rarr; `bookings(id)` |
+| **8** | `saved_passengers` | Saved frequent co-travelers master list for 1-click booking auto-fill and passenger management | `id` | `user_id` &rarr; `users(id)` |
 
 ---
 
@@ -109,7 +110,18 @@ erDiagram
         VARCHAR status
     }
 
+    saved_passengers {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR full_name
+        INT age
+        VARCHAR gender
+        VARCHAR berth_preference
+        TIMESTAMP created_at
+    }
+
     users ||--o{ bookings : "places (user_id)"
+    users ||--o{ saved_passengers : "saves (user_id)"
     stations ||--o{ trains : "source_station"
     stations ||--o{ trains : "dest_station"
     stations ||--o{ train_routes : "station_id"
@@ -379,6 +391,37 @@ CREATE TABLE IF NOT EXISTS booking_passengers (
 
 ---
 
+### 8. `saved_passengers`
+Passenger Master List for registered users, persisting frequent co-travelers to enable 1-click booking auto-fill.
+
+#### Schema
+| Column | Type | Nullable | Key | Default | Description |
+|---|---|---|---|---|---|
+| `id` | `BIGINT` | No | `PK` | `AUTO_INCREMENT` | Master passenger record identifier |
+| `user_id` | `BIGINT` | Yes | `FK` | `NULL` | Owner user identifier (`users.id`) |
+| `full_name` | `VARCHAR(100)` | No | - | None | Traveler legal full name |
+| `age` | `INT` | No | - | None | Traveler age |
+| `gender` | `VARCHAR(10)` | No | - | None | Traveler gender (`M`, `F`, `O`) |
+| `berth_preference` | `VARCHAR(30)` | Yes | - | `'NO PREFERENCE'` | Preferred berth choice |
+| `created_at` | `TIMESTAMP` | Yes | - | `CURRENT_TIMESTAMP` | Profile creation timestamp |
+
+#### DDL Statement
+```sql
+CREATE TABLE IF NOT EXISTS saved_passengers (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    age INT NOT NULL,
+    gender VARCHAR(10) NOT NULL,
+    berth_preference VARCHAR(30) DEFAULT 'NO PREFERENCE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_saved_passengers_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+---
+
 ## 4. Key Performance Indexes
 
 To support sub-50ms search and booking queries under load:
@@ -402,4 +445,7 @@ CREATE INDEX idx_classes_train_code ON train_classes (train_id, class_code);
 -- User ticket history & PNR lookups
 CREATE INDEX idx_bookings_user ON bookings (user_id);
 CREATE INDEX idx_bookings_pnr ON bookings (pnr);
+
+-- Frequent traveler retrieval
+CREATE INDEX idx_saved_passengers_user ON saved_passengers (user_id);
 ```

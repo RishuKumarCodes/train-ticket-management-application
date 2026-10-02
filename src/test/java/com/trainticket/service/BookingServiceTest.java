@@ -118,4 +118,34 @@ public class BookingServiceTest {
         Booking b = bookingService.getBookingByPnr("NON-EXISTENT-PNR-999");
         org.junit.jupiter.api.Assertions.assertNull(b, "Non-existent PNR lookup should return null");
     }
+
+    @Test
+    @DisplayName("Normalized PNR search resolves PNR regardless of hyphens and whitespace")
+    void testNormalizedPnrSearch() {
+        Booking b1 = bookingService.getBookingByPnr("234-8901234");
+        Booking b2 = bookingService.getBookingByPnr("2348901234");
+        Booking b3 = bookingService.getBookingByPnr(" 234-8901234 ");
+
+        assertNotNull(b1, "PNR with hyphen should resolve");
+        assertNotNull(b2, "PNR without hyphen should resolve");
+        assertNotNull(b3, "PNR with spaces should resolve");
+        assertEquals(b1.getPnr(), b2.getPnr());
+    }
+
+    @Test
+    @DisplayName("Pre-seeded sample PNRs for CNF, RAC, and WL are available for instant testing")
+    void testSamplePnrSeedData() {
+        Booking cnf = bookingService.getBookingByPnr("234-8901234");
+        Booking rac = bookingService.getBookingByPnr("645-1234567");
+        Booking wl  = bookingService.getBookingByPnr("812-9876543");
+
+        assertNotNull(cnf, "Confirmed sample booking should exist");
+        assertEquals("CONFIRMED", cnf.getStatus());
+
+        assertNotNull(rac, "RAC sample booking should exist");
+        assertEquals("RAC", rac.getStatus());
+
+        assertNotNull(wl, "WL sample booking should exist");
+        assertEquals("WL", wl.getStatus());
+    }
 }

@@ -84,6 +84,7 @@ public class StationAutocompleteDropdown {
 
     private AWTEventListener outsideClickListener;
     private boolean updatingProgrammatically = false;
+    private Timer searchDebounceTimer;
 
     public StationAutocompleteDropdown(JTextField targetField, JComponent anchorComponent,
                                        StationDAO stationDAO, Station initialStation,
@@ -220,6 +221,17 @@ public class StationAutocompleteDropdown {
                 }
             }
         });
+
+        // 5. Auto close if anchor component or field is removed or hidden
+        if (anchorComponent != null) {
+            anchorComponent.addHierarchyListener(e -> {
+                if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0) {
+                    if (!anchorComponent.isShowing()) {
+                        closeDropdown();
+                    }
+                }
+            });
+        }
     }
 
     private void onTextChanged() {
@@ -227,7 +239,11 @@ public class StationAutocompleteDropdown {
             return;
         }
 
-        SwingUtilities.invokeLater(() -> {
+        if (searchDebounceTimer != null && searchDebounceTimer.isRunning()) {
+            searchDebounceTimer.stop();
+        }
+
+        searchDebounceTimer = new Timer(50, e -> {
             filterStations(targetField.getText());
             if (!isDropdownOpen && targetField.isFocusOwner()) {
                 openDropdown();
@@ -235,6 +251,8 @@ public class StationAutocompleteDropdown {
                 popupContent.refreshRows();
             }
         });
+        searchDebounceTimer.setRepeats(false);
+        searchDebounceTimer.start();
     }
 
     private void filterStations(String rawQuery) {
@@ -381,10 +399,12 @@ public class StationAutocompleteDropdown {
         int triggerH = anchorComponent.getHeight();
         int triggerW = anchorComponent.getWidth();
 
-        int popupWidth = Math.max(Math.max(triggerW, anchorComponent.getWidth()) + 40, 420);
+        final int shadowPad = 14;
+        int popupWidth = Math.max(triggerW + shadowPad * 2, 380);
         popupWidth = Math.min(popupWidth, screenRight - screenLeft);
 
-        int naturalHeight = Math.min(filteredStations.size(), 6) * 54 + 32;
+        int count = Math.min(filteredStations.size(), 6);
+        int naturalHeight = (count > 0 ? count : 1) * 54 + 32 + shadowPad * 2;
         naturalHeight = Math.max(naturalHeight, 140);
 
         int spaceBelow = screenBottom - (triggerY + triggerH + gap);
@@ -409,7 +429,7 @@ public class StationAutocompleteDropdown {
             }
         }
 
-        int popupX = triggerX;
+        int popupX = triggerX - shadowPad;
         if (popupX + popupWidth > screenRight) {
             popupX = screenRight - popupWidth;
         }
@@ -417,10 +437,11 @@ public class StationAutocompleteDropdown {
             popupX = screenLeft;
         }
 
-        int popupY = openUpward ? (triggerY - popupHeight - gap) : (triggerY + triggerH + gap);
+        int popupY = openUpward ? (triggerY - popupHeight - gap + shadowPad) : (triggerY + triggerH + gap - shadowPad);
 
         if (popupWindow == null) {
             popupWindow = new JWindow(owner);
+            popupWindow.setType(Window.Type.POPUP);
             popupWindow.setBackground(new Color(0, 0, 0, 0));
             popupContent = new PopupCardPanel();
             popupWindow.setContentPane(popupContent);
@@ -430,7 +451,10 @@ public class StationAutocompleteDropdown {
         popupContent.refreshRows();
 
         popupWindow.setBounds(popupX, popupY, popupWidth, popupHeight);
+        popupWindow.setAlwaysOnTop(true);
+        popupWindow.toFront();
         popupWindow.setVisible(true);
+        popupWindow.toFront();
         isDropdownOpen = true;
 
         popupContent.startEnterAnimation();
@@ -438,10 +462,6 @@ public class StationAutocompleteDropdown {
     }
 
     public void closeDropdown() {
-        if (!isDropdownOpen) {
-            return;
-        }
-
         isDropdownOpen = false;
         unregisterOutsideClickListener();
 
@@ -463,14 +483,30 @@ public class StationAutocompleteDropdown {
 
         outsideClickListener = event -> {
             if (event instanceof MouseEvent me && me.getID() == MouseEvent.MOUSE_PRESSED) {
-                if (!isDropdownOpen || popupWindow == null || !popupWindow.isVisible()) {
+                if (popupWindow == null || !popupWindow.isVisible()) {
                     return;
                 }
                 Point clickPoint = me.getLocationOnScreen();
-                Rectangle triggerBounds = new Rectangle(anchorComponent.getLocationOnScreen(), anchorComponent.getSize());
-                Rectangle popupBounds = popupWindow.getBounds();
+                boolean insideTrigger = false;
+                try {
+                    if (anchorComponent != null && anchorComponent.isShowing()) {
+                        Rectangle triggerBounds = new Rectangle(anchorComponent.getLocationOnScreen(), anchorComponent.getSize());
+                        insideTrigger = triggerBounds.contains(clickPoint);
+                    }
+                } catch (Exception ignored) {
+                    insideTrigger = false;
+                }
 
-                if (!triggerBounds.contains(clickPoint) && !popupBounds.contains(clickPoint)) {
+                boolean insidePopup = false;
+                try {
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        insidePopup = popupWindow.getBounds().contains(clickPoint);
+                    }
+                } catch (Exception ignored) {
+                    insidePopup = false;
+                }
+
+                if (!insideTrigger && !insidePopup) {
                     SwingUtilities.invokeLater(this::closeDropdown);
                 }
             }
@@ -565,7 +601,8 @@ public class StationAutocompleteDropdown {
                 emptyPanel.add(noMatch);
                 listContainer.add(emptyPanel);
             } else {
-                for (int i = 0; i < filteredStations.size(); i++) {
+                int limit = Math.min(filteredStations.size(), 20);
+                for (int i = 0; i < limit; i++) {
                     Station s = filteredStations.get(i);
                     StationRowPanel row = new StationRowPanel(s, i);
                     rowPanels.add(row);

@@ -96,7 +96,7 @@ public class AuthDialog extends ModernModalDialog {
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         footerPanel.setOpaque(false);
 
-        JLabel adminLink = new JLabel("Station Master / Operations Console →");
+        JLabel adminLink = new JLabel("Station Master / Operations Console >");
         adminLink.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
         adminLink.setForeground(new Color(100, 116, 139)); // Slate-500
         adminLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -165,7 +165,7 @@ public class AuthDialog extends ModernModalDialog {
     private void styleTabButton(JButton btn, boolean active) {
         if (active) {
             btn.putClientProperty(FlatClientProperties.STYLE,
-                    "arc: 999; background: #FFFFFF; foreground: #0F172A; dropShadow: true;");
+                    "arc: 999; background: #FFFFFF; foreground: #0F172A;");
         } else {
             btn.putClientProperty(FlatClientProperties.STYLE,
                     "arc: 999; background: #00000000; foreground: #64748B; hoverBackground: #E2E8F0;");
@@ -220,6 +220,9 @@ public class AuthDialog extends ModernModalDialog {
                 new Color(201, 63, 0),
                 Color.WHITE
         );
+        loginSubmitBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        loginSubmitBtn.setPreferredSize(new Dimension(456, 44));
+        loginSubmitBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         loginSubmitBtn.addActionListener(e -> performLogin());
         panel.add(loginSubmitBtn);
 
@@ -285,6 +288,9 @@ public class AuthDialog extends ModernModalDialog {
                 new Color(201, 63, 0),
                 Color.WHITE
         );
+        regSubmitBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        regSubmitBtn.setPreferredSize(new Dimension(456, 44));
+        regSubmitBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         regSubmitBtn.addActionListener(e -> performRegister());
         panel.add(regSubmitBtn);
 
@@ -419,10 +425,9 @@ public class AuthDialog extends ModernModalDialog {
         field.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 13f));
         field.setForeground(new Color(15, 23, 42));
         field.setCaretColor(new Color(250, 89, 9));
-        field.setBorder(new EmptyBorder(0, 18, 0, 18));
         field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         field.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 999; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
+                "arc: 999; margin: 0,16,0,16; background: #F1F5F9; borderWidth: 1; borderColor: #CBD5E1; " +
                 "focusedBorderColor: #FA5909; focusedBackground: #FFFFFF;" +
                 (isPassword ? " showRevealButton: true;" : ""));
         return field;

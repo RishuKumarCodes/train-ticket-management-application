@@ -13,6 +13,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -274,6 +277,86 @@ public class UserDAO {
         );
         saveToMemoryFallback(fallbackUser, passwordHash, salt);
         return fallbackUser;
+    }
+
+    /**
+     * Returns all registered users (excluding duplicate index keys), ordered by ID descending.
+     * Queries the database first; falls back to the in-memory store.
+     *
+     * @return List of all User entities
+     */
+    public List<User> getAllUsers() {
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "SELECT id, username, email, phone, full_name, password_hash, salt, role, status, created_at " +
+                         "FROM users ORDER BY id DESC";
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+                List<User> users = new ArrayList<>();
+                while (rs.next()) {
+                    users.add(mapRowToUser(rs));
+                }
+                return users;
+            } catch (SQLException ex) {
+                logger.debug("Database getAllUsers failed ({}), falling back to in-memory store.", ex.getMessage());
+            }
+        }
+
+        // Deduplicate in-memory entries (same user stored under username, email, phone keys)
+        Map<Long, User> deduped = new LinkedHashMap<>();
+        for (UserRecord rec : IN_MEMORY_USERS.values()) {
+            User u = rec.user();
+            if (u.getId() != null) {
+                deduped.put(u.getId(), u);
+            }
+        }
+        List<User> result = new ArrayList<>(deduped.values());
+        result.sort((a, b) -> Long.compare(
+                b.getId() != null ? b.getId() : 0L,
+                a.getId() != null ? a.getId() : 0L));
+        return result;
+    }
+
+    /**
+     * Updates a user's status in both the database and in-memory cache.
+     *
+     * @param userId    The user's numeric ID
+     * @param newStatus Either "ACTIVE" or "BLOCKED"
+     * @return true if at least one store was updated, false otherwise
+     */
+    public boolean updateUserStatus(Long userId, String newStatus) {
+        if (userId == null || newStatus == null) return false;
+        String cleanStatus = newStatus.trim().toUpperCase();
+        boolean dbUpdated = false;
+
+        if (DatabaseConnectionPool.isAvailable()) {
+            String sql = "UPDATE users SET status = ? WHERE id = ?";
+            try (Connection conn = DatabaseConnectionPool.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, cleanStatus);
+                stmt.setLong(2, userId);
+                int rows = stmt.executeUpdate();
+                dbUpdated = rows > 0;
+                logger.info("DB status update for userId={} to {} ({} rows)", userId, cleanStatus, rows);
+            } catch (SQLException ex) {
+                logger.debug("DB updateUserStatus failed ({}), applying to in-memory cache only.", ex.getMessage());
+            }
+        }
+
+        // Sync in-memory cache
+        boolean memUpdated = false;
+        for (Map.Entry<String, UserRecord> entry : IN_MEMORY_USERS.entrySet()) {
+            UserRecord rec = entry.getValue();
+            if (userId.equals(rec.user().getId())) {
+                User old = rec.user();
+                User updated = new User(
+                        old.getId(), old.getUsername(), old.getEmail(), old.getPhone(),
+                        old.getFullName(), old.getRole(), cleanStatus, old.getCreatedAt());
+                IN_MEMORY_USERS.put(entry.getKey(), new UserRecord(updated, rec.passwordHash(), rec.salt()));
+                memUpdated = true;
+            }
+        }
+        return dbUpdated || memUpdated;
     }
 
     private void saveToMemoryFallback(User user, String hash, String salt) {

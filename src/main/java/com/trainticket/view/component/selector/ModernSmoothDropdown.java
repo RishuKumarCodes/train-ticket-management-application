@@ -59,6 +59,14 @@ public class ModernSmoothDropdown<T> extends JPanel {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setFocusable(true);
 
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0) {
+                if (!isShowing()) {
+                    closeDropdown();
+                }
+            }
+        });
+
         initInteractions();
     }
 
@@ -230,6 +238,7 @@ public class ModernSmoothDropdown<T> extends JPanel {
 
         if (popupWindow == null) {
             popupWindow = new JWindow(owner);
+            popupWindow.setType(Window.Type.POPUP);
             popupWindow.setBackground(new Color(0, 0, 0, 0));
             popupContent = new PopupCardPanel();
             popupWindow.setContentPane(popupContent);
@@ -238,8 +247,11 @@ public class ModernSmoothDropdown<T> extends JPanel {
         popupContent.buildItemRows();
         popupWindow.setSize(popupWidth, popupHeight);
         popupWindow.setLocation(targetX, targetY);
+        popupWindow.setAlwaysOnTop(true);
+        popupWindow.toFront();
         popupContent.startEnterAnimation(targetY, openUpward);
         popupWindow.setVisible(true);
+        popupWindow.toFront();
 
         isDropdownOpen = true;
         animateChevron(true);
@@ -247,10 +259,6 @@ public class ModernSmoothDropdown<T> extends JPanel {
     }
 
     public void closeDropdown() {
-        if (!isDropdownOpen) {
-            return;
-        }
-
         isDropdownOpen = false;
         animateChevron(false);
         unregisterOutsideClickListener();
@@ -300,14 +308,25 @@ public class ModernSmoothDropdown<T> extends JPanel {
 
         outsideClickListener = event -> {
             if (event instanceof MouseEvent me && me.getID() == MouseEvent.MOUSE_PRESSED) {
-                if (!isDropdownOpen || popupWindow == null || !popupWindow.isVisible()) {
+                if (popupWindow == null || !popupWindow.isVisible()) {
                     return;
                 }
                 Point clickPoint = me.getLocationOnScreen();
-                Rectangle triggerBounds = new Rectangle(getLocationOnScreen(), getSize());
-                Rectangle popupBounds = popupWindow.getBounds();
+                boolean insideTrigger = false;
+                try {
+                    if (isShowing()) {
+                        insideTrigger = new Rectangle(getLocationOnScreen(), getSize()).contains(clickPoint);
+                    }
+                } catch (Exception ignored) {}
 
-                if (!triggerBounds.contains(clickPoint) && !popupBounds.contains(clickPoint)) {
+                boolean insidePopup = false;
+                try {
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        insidePopup = popupWindow.getBounds().contains(clickPoint);
+                    }
+                } catch (Exception ignored) {}
+
+                if (!insideTrigger && !insidePopup) {
                     SwingUtilities.invokeLater(this::closeDropdown);
                 }
             }

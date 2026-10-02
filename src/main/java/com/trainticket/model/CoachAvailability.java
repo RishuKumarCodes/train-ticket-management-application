@@ -62,6 +62,10 @@ public final class CoachAvailability {
         return finalFare;
     }
 
+    public CoachAvailability withAdjustedSeats(int newAvailable, int newRac, int newWaitlist) {
+        return new CoachAvailability(classCode, quotaCode, totalSeats, newAvailable, newRac, newWaitlist, baseFare, finalFare);
+    }
+
     /**
      * Determines whether seats are available, in RAC, or waitlisted.
      */
@@ -100,6 +104,10 @@ public final class CoachAvailability {
             case "EC" -> "Exec. Chair Car (EC)";
             default -> classCode;
         };
+    }
+
+    public String getClassName() {
+        return getFullClassName();
     }
 
     public enum AvailabilityStatus {

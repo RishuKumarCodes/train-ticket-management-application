@@ -46,9 +46,8 @@ RailFlow strictly uses organic, rounded curvature throughout the desktop applica
 
 All screens, modals, dialogs, and administrative consoles adhere strictly to the **Light Theme & Frosted Milk-Glass System** established by the home page:
 
-| Token Name | Hex / RGBA | Role |
-|---|---|---|
-| `--bg-base` | `#F8FAFC` | Main canvas / viewport background |
+| `--bg-base` | `#EEF2F6` | Non-home pages canvas background (slightly darker Slate-150 for crisp contrast with white cards) |
+| `--bg-home` | Dynamic Video Canvas | Full-motion railway video background with subtle scrim gradient |
 | `--surface-card` | `rgba(255, 255, 255, 0.92)` | Frosted milk-glass cards & modals (alpha 235) |
 | `--surface-pure-white` | `#FFFFFF` | Solid white cards, active tabs, and pill buttons |
 | `--surface-subtle` | `#F1F5F9` | Tab capsules, guest buttons, and search badges |
@@ -83,63 +82,121 @@ Every screen and dialog in RailFlow shares the identical clean light aesthetic:
    - **Multi-Tier Ambient Shadows**: 24px outer canvas padding ensuring 3-tier Gaussian ambient drop shadows (`new Color(0, 0, 0, 8)`, `new Color(0, 0, 0, 14)`, `new Color(0, 0, 0, 22)`) never clip against the OS window rectangle.
    - **Card Curvature & Borders**: Exactly **50px corner radius** (`arc: 100`, matching Featured Destinations cards) and **strictly 0px border** (`borderWidth: 0`).
    - **Typography**: Display headings rendered in condensed uppercase **Bebas Neue Bold** (`34pt - 36pt`). Zero header clutter (no icons, no small orange eyebrow badges, no subtitle descriptions).
-   - **Full Rounded Pill Controls**: All text inputs, password fields, and action buttons are **100% full rounded pill shaped** (`arc: 999`, radius = height / 2) with generous 18px horizontal padding and Brand Orange focus rings (`#FA5909`).
+   - **Full Rounded Pill Controls**: All text inputs, password fields, and action buttons are **100% full rounded pill shaped** (`arc: 999`, radius = height / 2) with FlatLaf margin-based inset padding (`margin: 0,16,0,16`, avoiding empty border overrides that disrupt round border delegates), visible `#F1F5F9` background, crisp `#CBD5E1` border, and Brand Orange focus rings (`#FA5909`, or `#0284C7` in admin context). All action buttons enforce strict `alignmentX = Component.CENTER_ALIGNMENT` to guarantee uniform vertical alignment in `BoxLayout` containers.
 
 2. **Passenger Authentication Modal (`AuthDialog`)**:
    - Extends `ModernModalDialog` with $520 \times 560\text{px}$ card canvas.
    - Monumental Bebas Neue title (`WELCOME TO RAILFLOW` / `CREATE ACCOUNT`).
    - Pill segmented tab switcher (`#F1F5F9` pill capsule, `arc: 999`).
-   - 100% full pill inputs (`arc: 999`, `#F8FAFC` fill, `#E2E8F0` border, `#FA5909` focus ring).
-   - Full pill Brand Orange submit button with squash/stretch liquid animation and "Continue as Guest" pill button.
-   - Shortcut footer link to Station Master Operations Console.
+   - 100% full pill inputs (`arc: 999`, `#F1F5F9` visible background fill, `#CBD5E1` border, `#FA5909` focus ring with `#FFFFFF` focused background).
+   - Centered full-width pill Brand Orange submit button with squash/stretch liquid animation and "Continue as Guest" pill button.
+   - Clean shortcut footer link (`>`) to Station Master Operations Console without unicode tofu glyphs.
 
 3. **Full-Page Station Master Command Center (`AdminDashboardView` & `AdminLoginDialog`)**:
-   - **Admin Login Modal (`AdminLoginDialog`)**: Extends `ModernModalDialog` with $480 \times 460\text{px}$ card canvas, monumental Bebas Neue title `STATION MASTER CONSOLE` (zero icons/eyebrows), full pill Operator ID and Master Access Key inputs (`arc: 999`), Sky Blue pill authorize button (`#0284C7`), and cancel button. Upon successful verification, dispatches directly into `MainFrame`'s full-page view rather than spawning an auxiliary popup window.
+   - **Admin Login Modal (`AdminLoginDialog`)**: Extends `ModernModalDialog` with $480 \times 460\text{px}$ card canvas, monumental Bebas Neue title `STATION MASTER CONSOLE` (zero icons/eyebrows), full pill Operator ID and Master Access Key inputs (`arc: 999`, `#F1F5F9` fill, `#CBD5E1` border, `#0284C7` focus border), centered full-width Sky Blue pill authorize button (`#0284C7`), and clean `< Back to Passenger Window` button. Upon successful verification, dispatches directly into `MainFrame`'s full-page view rather than spawning an auxiliary popup window.
    - **Full-Page Embedded Admin Dashboard (`AdminDashboardView`)**:
      - Embedded seamlessly inside `MainFrame` using `CardLayout` (`"ADMIN"` vs `"PASSENGER"`), releasing video/audio thread resources during administration sessions.
-     - **Top Command Bar**: Solid white bar with active operator identity pill (`#F0F9FF` / `#0284C7`), live real-time digital clock (`HH:mm:ss`), database health badge (`#ECFDF5` / `#10B981`), and a full rounded pill `"SIGN OUT & RETURN"` button (`#FEF2F2` / `#DC2626`).
-     - **Left Operational Sidebar**: Pure white `#FFFFFF` bar with `#E2E8F0` right divider, uppercase Bebas Neue `STATION MASTER` header, and 5 navigation toggle pill buttons:
-       - `Command Overview`
-       - `Train Fleet Rosters`
-       - `Stations & Route Halts`
-       - `Booking Manifests`
-       - `System Health & DB`
-     - **Metric Cards & Data Tables**: 4 key performance cards (Active Trains, Stations Linked, Confirmed Bookings, Fleet On-Time Rate) with 50px corner radius, `#FFFFFF` fill, 0px border, multi-tier soft shadows, Bebas Neue metric headers, and high-contrast numbers; alongside live interactive tables for trains, stations, and passenger booking manifests.
+     - **Integrated Scrollable Analytics Workspace**: Overview tab is hosted inside a borderless `JScrollPane` (vertical scrolling with 20px unit increment, horizontal scrolling disabled) eliminating rigid top headers that consumed 72px fixed vertical space. Includes an integrated scrolling header ("ANALYTICS OVERVIEW" in monumental 30pt Bebas Neue) alongside a live 1-second digital clock pill (`EEE, dd MMM yyyy • HH:mm:ss`) and a real-time network operational health pill (`● SYSTEM HEALTH: 99.4% OPTIMAL`).
+     - **Left Operational Sidebar**: Floating Apple-style operational panel (`AdminSidebar`) elevated with 28px rounded corners, multi-tier soft ambient drop shadow, Bebas Neue `STATION MASTER` header, operator credential display, bottom `← Sign Out & Return` pill button, and 6 concise navigation pill toggles (`Overview`, `Fleet`, `Stations`, `Bookings`, `Destinations`, `Health`) rendered with 14pt bold typography, `#F1F5F9` hover state, and a vibrant `#0284C7` (Electric Admin Sky Blue) pill-shaped active background.
+     - **Elevated KPI Metric Cards (`AdminStatCard`)**: 4 key performance cards (Active Trains, Daily Passengers, On-Time Rate, Gross Revenue) with 50px corner radius, `#FFFFFF` fill, strictly 0px border, multi-tier soft ambient drop shadows (`new Color(0,0,0,8)` to `12`), monumental Bebas Neue figures (34pt), and color-coded status pills indicating 100% real mathematical metrics (Active ratio, Confirmed passengers & active PNRs, Fleet average delay, and Average fare per passenger).
+     - **Industrial-Grade Vector Analytics Charts (100% Real Database Calculations)**:
+       - **Curved Area & Line Spline Chart (`AnalyticsLineChart`)**: Visualizes 7-day gross revenue and passenger traffic trends aggregated directly by `DayOfWeek` across all active bookings in the system using cubic spline interpolation (`curveTo`), vertical gradient area fills (`#FA5909` with 45-alpha fading to transparent), benchmark gridlines (`#F1F5F9`), white glowing milestone nodes, dynamic Y-axis ceiling scaling, and a floating peak callout pill badge.
+       - **Seat Class Demand & Capacity Share Donut Chart (`AnalyticsDonutChart`)**: Anti-aliased multi-segment donut ring visualizing coach class shares (3A, 2A, 1A, SL, CC/EC) computed from live coach availability tables and confirmed reservations with clean 2.5-degree white divider arcs, central network-wide seat occupancy callout (`XX.X% SEATS BOOKED`), and minimalist right-aligned legend with exact percentages.
+       - **High-Density Corridor Performance Gauges**: 5 major trunk lines (NDLS ➔ MMCT, NDLS ➔ BSB, HWH ➔ NDLS, MAS ➔ SBC, NDLS ➔ LKO) rendered as rounded progress capsules (`arc: 999`) whose progress bars, train counts, seat capacities, and booked counts calculate dynamically from the actual fleet inventory.
+       - **Hourly Network Dispatch Distribution Histogram (`AnalyticsBarChart`)**: 24-hour departure volume across 8 time windows with rounded capsule tops (`arc: 8`), dynamically highlighting peak departure windows calculated from origin departure halts across all 101 trains in the fleet.
+       - **Live Train Rosters & Dispatch Table**: Clean modern table displaying priority express trains with real-time status pills (`ON TIME` in emerald, `DELAYED` in amber, `DEPARTED` in blue).
+     - **System Health & Diagnostics Telemetry Workspace (`HEALTH`)**:
+       - Hosted in a dedicated fluid `JScrollPane` (20px vertical increment, borderless) eliminating empty voids and detached label grids.
+       - **Integrated Header**: Monumental Bebas Neue title `SYSTEM HEALTH & TELEMETRY`, reactive operational status pill (`● ALL SYSTEMS OPERATIONAL` in emerald `#ECFDF5` or `● IN-MEMORY PERSISTENCE ACTIVE` in amber `#FFF7ED`), manual refresh pill button (`↻ REFRESH TELEMETRY`), and real-time clock pill (`LIVE • HH:mm:ss`).
+       - **4 Elevated Health Stat Cards (`AdminStatCard`)**: 50px borderless rounded cards for Database Engine (Online/In-Memory with HikariCP pool specs), JVM Heap Usage (Allocated MB and utilization percentage), Active Threads & Hardware Concurrency (Thread count and available CPU cores), and UI Presentation Engine (Fluid 60 FPS FlatLaf light theme).
+       - **Primary Telemetry Split Row**:
+         - *Core Subsystems Status & Integrity Matrix*: Dedicated cards for HikariCP Database Connection Pool, Authentication & BCrypt Security, Swing UI 60 FPS Animation Pipeline, Fleet & Route Graph Cache, and Ticketing/PNR Engine with real-time status pills (`ONLINE`, `ENCRYPTED`, `60 FPS FLUID`, `SYNCHRONIZED`, `OPERATIONAL`) and hairline dividers.
+         - *JVM Runtime & Hardware Resource Allocation*: Multi-segment rounded visual memory bar (`HeapMemoryBar`) illustrating Used Heap (Brand Orange), Free In Allocated Heap (Sky Blue), and Unallocated Max Headroom (Slate) alongside detailed host platform key-value specifications (Java Runtime, VM name, OS & architecture, CPU cores).
+       - **Secondary Operations & Audit Row**:
+         - *Operational Diagnostic Controls*: Direct pill triggers to execute runtime JVM garbage collection (`⚡ TRIGGER JVM GARBAGE COLLECTION`), re-test database ping roundtrip (`🔄 RE-TEST DATABASE PING & POOL`), and export full diagnostics to system clipboard (`📋 EXPORT TELEMETRY TO CLIPBOARD`).
+         - *Diagnostic Event Audit Log*: Embedded modern table displaying real-time system audit logs with timestamps, severity levels, target subsystems, diagnostic events, and verification results (`PASS`, `VERIFIED`, `NOMINAL`, `SECURED`, `OPTIMAL`).
 
-4. **Dedicated Trains Search & Discovery Page (`TrainsPageView`)**:
-   - **Architecture**: A dedicated full-page screen embedded in `MainFrame` (`"TRAINS"` card), invoked directly from the navigation bar or upon submitting a search query from `HomeView`.
-   - **Interactive Pre-Filled Search Header**: Features `SearchCapsulePanel` anchored at the top with pre-filled search parameters (Origin, Destination, Travel Date, Quota, Concession), allowing passengers to refine parameters on the fly without returning to the home screen.
+4. **Dedicated Route Search Results Page (`TrainSearchResultsView`)**:
+   - **Architecture**: A dedicated full-page screen mounted directly on `rootCardPanel` (`"ROUTE_SEARCH"` card), invoked upon submitting a route search query from `HomeView` (From ➔ To on Date).
+   - **Dedicated Custom Header (Zero Background & Zero Border)**: Features its own custom top header matching `PlanMyTripView` with strictly **no background** (`setOpaque(false)`) and **no border line**, clearing macOS title bar traffic lights via 36px top inset:
+     - Left: 42x42 Brand Orange circular pill button (`#FA5909`) with clean white left arrow (`←`) returning to Home.
+     - Center: Monumental uppercase **Bebas Neue Bold** (`28pt`) `AVAILABLE TRAINS` headline.
+     - Right: Subtle location/route pill badge (`#F1F5F9` background, `#64748B` text) displaying active route endpoints and train counts.
+   - **Interactive Modern 2-Row Search Capsule (`SearchCapsulePanel`)**: Features `SearchCapsulePanel` anchored below the header with a modern 2-row layout and harmonized **76px rounded corners**:
+     - **Dimensions & Geometry**: 1040px preferred width, ultra-compact 106px height, 76px corner radius (`Math.min(76, h)`, radius 38px) with multi-tier ambient drop shadow.
+     - **Left Section (2 Rows with Inline Labels)**:
+       - **Row 1 (Inline Origin, Swap, Terminus)**: Origin (`FROM` label placed inline next to input field), animated rotating station swap button (`⇄`), and Terminus (`TO` label placed inline next to input field) on the same horizontal row using `BorderLayout(8, 0)`, saving vertical space.
+       - **Row 2 (Inline Date, Quota, Concession)**: Departure Date (`DATE` inline with date picker), Quota dropdown (`QUOTA` inline with selector), and Concession dropdown (`CONCESSION` inline with selector) separated by subtle vertical dividers.
+     - **Right Section (Concentric Full Height & Width Action Button with Pure Vector Search Icon)**: Prominent Brand Orange action button occupying the full remaining height and width of the right section (`88px` column width, `78x78px` symmetrical footprint, `arc: 50` concentric rounded corners, `#FA5909`). Sits with a uniform 14px outer margin on top, bottom, and right, satisfying the concentric curvature invariant ($R_{\text{inner}} = R_{\text{outer}} - \text{padding} = 38\text{px} - 14\text{px} = 24\text{px}-25\text{px}$ / `arc: 50`), featuring squash/stretch liquid animation and a pure anti-aliased white vector magnifying glass icon with strictly zero text.
+     - **Performance Engineering**: Layout metrics, character advances, and font instances in kinetic typography (`HeroCenterTitleComponent`) are cached with dirty rect clipping, and `uiOverlayPanel` caches gradient brushes to eliminate 60 FPS repainting lag.
    - **Canvas & Theme**: Light Sky-Slate base (`#F8FAFC`) with smooth custom overlay scrollbar.
-   - **Monumental Title**: Uppercase **Bebas Neue Bold** (`38pt`) `AVAILABLE TRAINS` with zero header clutter (no icons, no eyebrows, no descriptions).
-   - **Query Meta Chips**: Rounded pill badges (`arc: 999`) for Route (`#EFF6FF` / `#1D4ED8`), Date (`#F1F5F9`), Quota (`#FFF7ED` / `#C2410C`), Concession (`#ECFDF5` / `#047857`), and Scheduled Count (`#FA5909`).
-   - **Sorting Filters Bar**: Full rounded pill toggle buttons (`arc: 999`) for `DEPARTURE (EARLIEST)`, `DURATION (FASTEST)`, `ARRIVAL (EARLIEST)`, and `SEATS AVAILABLE`.
+   - **Horizontal Breathing Room & Center Grid (1040px Grid Alignment)**:
+     - Search capsule on `HeroSection` leaves generous horizontal margin (`capW = Math.min(capSize.width, w - 160)`), ensuring at least 80px spacing from screen edges.
+     - `TrainSearchResultsView` unifies the top `SearchCapsulePanel`, `createSortBar` (1040x36px), and `TrainResultCard` (1040x260px) on the exact same 1040px center grid column (`alignmentX = 0.5f`).
+   - **Uncluttered Visual Hierarchy**: Redundant meta summary chips bars are removed in favor of a sleek, breathable, minimalist layout.
+   - **Date Navigation Strip & Sorting Dropdown Toolbar (Unified Single Row)**:
+     - **Left Side**: Dynamic 6-day date navigation strip (`d MMM` e.g., `4 Jun`, `5 Jun`, `6 Jun`) with pagination arrows (`‹` / `›`). Active date is highlighted in solid obsidian black (`#0F172A`) with white text; inactive dates use crisp white sheet styling with `#E2E8F0` border and hover feedback. Clicking any date triggers real-time in-page re-query for that day's scheduled trains.
+     - **Right Side**: Full rounded pill sorting dropdown (`JComboBox`, `arc: 999`, `#FFFFFF` background, `#E2E8F0` border, `#FA5909` focus ring) supporting `Departure: Earliest`, `Duration: Fastest`, `Arrival: Earliest`, and `Seats: Most Available`.
    - **Train Result Cards (`TrainResultCard`)**:
-     - Strict **50px corner radius** (`arc: 100`, matching Featured Destinations cards) and **strictly 0px border** (`borderWidth: 0`).
-     - Multi-tier Gaussian ambient drop shadows (`new Color(0, 0, 0, 10)` and `new Color(0, 0, 0, 14)`).
-     - Card Header: Train number in Slate (`#64748B`), Train Name in Bebas Neue Bold (`26pt`, `#0F172A`), Type badge, live running status pill (`● ON TIME`), and active running days pill.
-     - Journey Stepper: Departure time (`22pt` bold), Origin station code & name, center dashed travel line with duration (`15h 40m`) and distance (`1,384 km`), Arrival time with day offset badge (`+1 day`), and Destination station.
-     - Coach Availability Pills (`CoachClassPillButton`): Interactive $126 \times 76\text{px}$ cards with `arc: 28`, dynamic fare, real-time availability status badges (Green `AVAILABLE`, Amber `RAC`, Coral `WL`), and Brand Orange selection ring.
-     - Footer Actions: Full pill buttons for "VIEW ROUTE & TIMETABLE ↗" and "BOOK JOURNEY" (`#FA5909`).
+     - Sleek modern **18px corner radius** (`arc: 36`) and **strictly 0px border** (`borderWidth: 0`), optimized for compact listing without visual bulk.
+     - Tight **10px vertical spacing** between consecutive cards in the results stream.
+     - Multi-tier Gaussian ambient drop shadows (`new Color(0, 0, 0, 6)` and `new Color(0, 0, 0, 10)`).
+     - Card Header: Train Name in Bebas Neue Bold (`26pt`, `#0F172A`), Train number in Slate (`#64748B`), Type badge (`SHATABDI EXPRESS`), live running status pill (`● ON TIME`), and human-readable running days badge (`RUNS DAILY` or formatted active days like `MON - FRI` instead of raw bitmasks).
+     - Centered Journey Stepper: Uses `GridBagLayout` with symmetrical 200px origin and destination panels, centering the middle track panel mathematically within the card. Features 24px bold departure/arrival times, destination day offset pill, orange origin dot (`●`), center duration pill badge (`[ 6h 30m ]`), orange destination arrow (`▸`), and distance (`512 km`) centered below duration.
+     - Coach Availability Row (`CoachClassPillButton`): Dedicated horizontal row positioned below the journey stepper displaying all available coach classes (CC, 2S, 1A, 2A, 3A, 3E, SL, EC). Compact 102x46px cards with `arc: 16`, dynamic fare, Brand Orange active selection ring, and lighter, unselectable muted styling (`setEnabled(false)`) when unavailable.
+     - Mutually Exclusive Inline Expandable Panels: Card manages an `ExpandedView` state machine (`NONE`, `TRACKER`, `TIMETABLE`). Clicking `LIVE STATUS` or `TIMETABLE` expands only the selected mode and highlights the corresponding button in active state (vibrant blue `#2563EB` for Live Status, dark slate `#1E293B` for Timetable, with white typography). Prevents messy double-stacked panels.
+     - Single Train Auto-Expanded Mode: When a search returns exactly 1 train, the card auto-expands initially to `ExpandedView.TRACKER` with the `LIVE STATUS` button clearly styled as active (`HIDE LIVE STATUS`).
+     - Live Route Tracker (`LiveRouteTrackerPanel`): High-precision 4-column timeline:
+       - Column 1 (Left): Arrival/departure times right-aligned to track with departure/arrival labels in `#64748B`.
+       - Column 2 (Center): Vertical railway track at `TRACK_X = 145` with passed (`#2563EB`) and upcoming (`#CBD5E1`) segments, station nodes, and 60 FPS pulsing train beacon.
+       - Column 3 (Right): Station name in 13px bold obsidian, platform, distance, and halt duration (strictly standard fonts without broken or missing glyphs).
+       - Column 4 (Far Right): Clean pill badges (`DEPARTED`, `NEXT STOP`, `ON TIME`, `+Xm LATE`, `TERMINUS`).
+       - Floating Beacon Callout Card: Elevated white card displaying proximity to next station, live status badge, and real-time speed.
+     - **Max Width & Center Alignment**: Cards strictly cap at `1040px` maximum width (`getPreferredSize()` and `getMaximumSize()` clamped to 1040px) and center horizontally (`alignmentX = 0.5f`) in `TrainSearchResultsView` and `TrainsPageView`, preventing awkward over-stretching on widescreen monitors.
+     - **Balanced Timetable with Horizontal Scroll (`ScrollableTablePanel`)**:
+       - GridBagLayout distribution with balanced proportional weights (`Station: 35%`, `Arrival: 13%`, `Departure: 13%`, `Halt: 13%`, `Distance: 13%`, `Platform: 13%`) preventing cavernous voids between station name and arrival time.
+       - Enclosed within a smooth `JScrollPane` implementing `Scrollable` via `ScrollableTablePanel` (`MIN_TABLE_WIDTH = 700px`). When the card width shrinks or on compact viewports, the timetable smoothly activates horizontal scrolling (`HORIZONTAL_SCROLLBAR_AS_NEEDED`) keeping header and halt data rows perfectly aligned without text clipping or card distortion.
+     - **Non-Blocking Vertical Mouse Wheel Bubbling (`installMouseWheelForwarder`)**:
+       - Timetable renders its complete scheduled halt list vertically without an inner vertical scroll lock (`VERTICAL_SCROLLBAR_NEVER`).
+       - Both the Live Status timeline (`LiveRouteTrackerPanel`) and Timetable card install recursive mouse wheel forwarders (`installMouseWheelForwarder` and `initMouseWheelForwarder`) that dispatch vertical scroll delta directly to the enclosing page's `JScrollPane` (`vBar.setValue(vBar.getValue() + delta)`). Hovering over either list never halts or traps vertical page scrolling.
+     - Footer Actions: Selected class fare summary, `LIVE STATUS` toggle, `TIMETABLE` toggle, and full pill button for `BOOK JOURNEY` (`#FA5909`).
 
-5. **My Bookings Passenger History Page (`MyBookingsPageView`)**:
+5. **Dedicated Trains Fleet Discovery & Train Number/Name Search Page (`TrainsPageView`)**:
+   - **Architecture**: A dedicated full-page screen embedded in `MainFrame` (`"TRAINS"` card), invoked directly from the navigation bar "Trains" tab.
+   - **Fleet Discovery Focus**: Strictly dedicated to discovering the national fleet catalog (100+ trains) and searching by 5-digit Train Number (e.g. `12952`, `22436`) or Train Name (e.g. `Vande Bharat`, `Rajdhani`, `Shatabdi`, `Tejas`).
+   - **Compact Centered Search & Live Suggestions List**:
+     - Floating 48px rounded pill search card (740px centered) with pill text input, clear `✕` button, and Brand Orange `SEARCH 🔍` CTA.
+     - When no search has been executed, no heavy train cards are shown; instead, a clean, minimal in-page train suggestions list (740px centered) displays popular trains with train number badges, uppercase names, routes, and status.
+     - As the user types in the search bar, that exact same suggestions list dynamically filters in real time right below the search bar without floating popup dropdowns.
+     - Clicking any train suggestion selects that train and displays its detail card with inline live tracker auto-expanded.
+     - **Clean Navigation Header Bar**: When search results are displayed, the top bar shows a clean `← ALL TRAINS` pill button on the left and a subtle `1 MATCHING TRAIN FOUND` count on the right, completely eliminating duplicate train titles above the result card.
+   - **Horizontal Margin & Alignment**: Unified 1040px center grid column with generous margins and no heavy banners.
+
+6. **My Bookings Passenger History Page (`MyBookingsPageView`)**:
    - **Architecture**: Embedded full-page view inside `MainFrame` (`"MY_BOOKINGS"` card) accessible directly via the top navigation capsule.
+   - **Integrated PNR Status & Pass Lookup Card**:
+     - Anchored at the top of the page across both unauthenticated and authenticated states.
+     - 48px rounded white card (`#FFFFFF`, 0px border, multi-tier ambient drop shadow).
+     - Monumental uppercase Bebas Neue headline: `CHECK ANY PNR STATUS` (22pt) with zero subtitle clutter.
+     - Full rounded pill text field (`arc: 999`, `#F8FAFC`, `#E2E8F0` border, `#FA5909` focus ring) with inline Enter key listener.
+     - Brand Orange action pill button `CHECK STATUS` (`#FA5909`, `arc: 999`), opening `PnrStatusDialog`.
+     - One-click sample PNR pills: `234-8901234 (CNF)`, `645-1234567 (RAC)`, `812-9876543 (WL)`.
    - **Unauthenticated / Guest State**:
-     - Displays a centered, monumental 50px rounded frosted glass card (`#FFFFFF`, 0px border, multi-tier soft shadows).
-     - Clean uppercase Bebas Neue headline: `VIEW YOUR TRAIN BOOKINGS` (zero icons, zero subtitles).
-     - Full rounded pill CTA button `"LOG IN / SIGN UP"` (`#FA5909`, `arc: 999`) that opens `AuthDialog` with spring animation and seamlessly refreshes the booking list upon login.
+     - Guests can immediately check any PNR without logging in, view seat allocations, and download passes.
+     - Below the PNR card, displays a centered 50px rounded white card featuring a monumental `LOGIN TO VIEW YOUR BOOKINGS` title and a generous 240x48px `LOG IN / SIGN UP` action pill, perfectly centered horizontally and vertically.
    - **Authenticated Passenger State**:
-     - Displays the passenger's registered identity badge (`#EFF6FF` pill).
-     - Stream of confirmed reservation cards (`50px` rounded corners, `#FFFFFF`, 0px border, multi-tier soft ambient shadows):
+     - Displays the passenger's registered identity badge (`#EFF6FF` pill) and `SAVED TRAVELERS 👥` master list management button.
+     - Directly below the PNR search card, displays a stream of confirmed reservation cards (`50px` rounded corners, `#FFFFFF`, 0px border, multi-tier soft ambient shadows):
        - Header: PNR badge (`#FA5909`), status pill (`● CONFIRMED`), and train number/name.
        - Timings & Journey details: Departure and arrival times, travel date, class code, and total payable fare.
        - Passenger Manifest: List of travelers, assigned coach/seats (e.g. `B4-23 LOWER`), age, and gender.
        - Actions: Full pill buttons for `"VIEW E-TICKET PASS"` and `"CANCEL BOOKING"` with confirmation prompt and live status updates.
 
-5. **Station-Wise Route Timetable & Live Tracker Modal (`TrainRouteTimetableDialog`)**:
-   - Extends `ModernModalDialog` with $780 \times 620\text{px}$ window canvas.
-   - Monumental Bebas Neue title `STATION ROUTE & LIVE TIMETABLE`.
-   - Journey Summary Capsule in `#F8FAFC` displaying train number, commercial name, route terminals, duration, and distance.
-   - Center Timetable: Vertical rail track stepper showing halt circles (`● Passed`, `● Current Location`, `○ Scheduled`) paired with a custom styled `JTable` rendering stop sequence, station code/name, arrival, departure, halt duration, and cumulative rail km.
+5. **Unified Live Status & Route Timetable Modal (`LiveTrainTrackerDialog`)**:
+   - Single native OS window title bar header (internal duplicate headlines eliminated for ultra-clean minimalist aesthetic).
+   - Single top row combining compact train number search input with a no-background black search icon on the left, and day selection pills (`Yesterday`, `Today`, `Tomorrow`) on the right.
+   - Elevated live telemetry overview card positioned directly above the halts list (consolidating train details, next halt proximity headline, delay status badges, and animated refresh button).
+   - Unified whole-page scrolling covering the search row, telemetry overview card, column headers, and complete vertical route timeline (`LiveRouteTrackerPanel`).
 
 6. **Instant Passenger Expedition Booking Modal (`BookingDialog`)**:
    - Extends `ModernModalDialog` with $660 \times 620\text{px}$ window canvas.
@@ -449,7 +506,29 @@ Replicates the exact typographic aesthetic of the featured destinations design s
   - **Instantaneous Zero-Lag Exit & Symmetric Timing Physics**: The instant the user's cursor leaves the card (`mouseExited`), the exit animation initiates immediately with zero waiting or queue delays. The closing animation takes the **exact same duration as the opening animation** ($1400\text{ms}$ per-character duration, $30\text{ms}$ reverse stagger, total duration $\text{charTotalMs} = (L_{max}-1) \times 30 + 1400\text{ms}$). Using the symmetric liquid curve $E(p) = 1 - (1 - p)^8$, characters plunge down swiftly on initial un-hover before easing into a slow, buttery landing. Per-character continuous displacement snapshots (`animStartSlideY` from `currentCharSlideY`) guarantee seamless reversals mid-flight with zero visual popping or jumps if the user rapidly hovers and un-hovers across cards.
 - **Location Row (`paintLocationRow`)**:
   - Rendered **above the image** in bottom-left row aligned with the arrow button, featuring a frosted glass pill backdrop, orange accent dot, and Roboto Bold 12px location label (`#0F172A`).
-  - Subtle fade-up animation ($10\text{px}$ slide up with quadratic ease-out) coordinated with card hover state.
+### 9.4 Standalone "Plan My Trip" Architecture & Responsive Grid System (`PlanMyTripView`)
+RailFlow provides a dedicated full-page editorial destinations exploration view (`PlanMyTripView`), accessible via the `"Plan My Trip ↗"` header action:
+- **Dedicated Light Canvas**: Renders on the `#EEF2F6` canvas completely decoupled from background video playback.
+- **Fixed Floating Back Button (Layered Architecture)**:
+  - Utilizes `JLayeredPane` where `scrollPane` resides in `DEFAULT_LAYER` (`y: 36` to `h - 36`) and `floatingBackButton` resides in `PALETTE_LAYER` anchored at `(x: 24, y: 48, w: 44, h: 44)`.
+  - Multi-tiered ambient drop shadow (`rgba(0, 0, 0, 0.15)` elevation shadow + `rgba(250, 89, 9, 0.25)` warm brand glow).
+  - Micro-interactions follow Rule 3: 1.03x hover scale, 0.94x press squish, hand cursor, and tooltip.
+  - Remains fixed and floating in the viewport while destination cards and section headers scroll smoothly beneath it.
+- **Single Unified Header**:
+  - The redundant top fixed "PLAN MY TRIP" bar is removed in favor of a single editorial headline located inside the scroll view.
+  - Display Title: Monumental **Bebas Neue Bold** (`36pt`, `#0F172A`) `"FEATURED DESTINATIONS"`.
+  - Subtitle: **Roboto Plain** (`15pt`, `#64748B`) `"Explore iconic places across India by train"`.
+  - Location Badge: Frosted rounded pill `"India • All Destinations"` (`#F1F5F9` background, `#64748B` bold text) right-aligned with the card grid.
+  - Positioned inside `scrollContent` (`BorderLayout.NORTH`) with `14px` top inset and `84px` horizontal margins, scrolling naturally up and out of view as the user scrolls through destinations.
+- **Fluid Responsive Card Grid (`ResponsiveCardGridLayout`)**:
+  - A custom `LayoutManager2` supporting dynamic columns from **2 to 5 columns** based on available viewport width:
+    $$\text{Width} \ge 1480\text{px} \implies 5 \text{ columns}$$
+    $$1140\text{px} \le \text{Width} < 1480\text{px} \implies 4 \text{ columns}$$
+    $$800\text{px} \le \text{Width} < 1140\text{px} \implies 3 \text{ columns}$$
+    $$\text{Width} < 800\text{px} \implies 2 \text{ columns}$$
+  - **Zero Wasted Space (Pixel-Exact Width Distribution)**: Computes base card width $\lfloor(W - \text{gaps}) / \text{cols}\rfloor$ and distributes modulo remainders pixel-by-pixel across leading columns. Cards fit edge-to-edge across the container width without empty side gaps.
+  - **4:3 Portrait Aspect Ratio Scaling**: Card height is derived directly from card width ($H = \text{round}(W \times 1.333f)$), maintaining photographic proportions across any resolution.
+  - **Adaptive Card Typography & Controls**: `DestinationImageCard` dynamically scales monument title font size ($S = W / 360\text{px}$), offsets, and compacts the circular arrow button ($44\text{px}$ vs $52\text{px}$) and location pill when card width drops below $290\text{px}$.
 
 ---
 
@@ -509,8 +588,206 @@ To maintain the Universal Light Theme, borderless glassmorphism, and fluid 60 FP
 ### 10.4 Strict Video Background & Canvas Isolation
 - **Home View Exclusive Video**:
   - The looping background video player (`VideoBackgroundPanel`) and its play/pause state machine operate exclusively on the Home / Book Journey view (`BOOK_JOURNEY`).
-- **Complete Canvas Opadity on Internal Views**:
+- **Complete Canvas Opacity on Internal Views**:
   - Navigating to `TrainsPageView` (train search results), `MyBookingsPageView` (passenger journey history), or `AdminDashboardView` (operations console) explicitly halts video playback (`pauseVideo()`) and hides the video panel (`setVisible(false)`).
   - The root container panels, content wrappers, and scroll viewports for all secondary pages have `setOpaque(true)` and background `#F8FAFC` (Clean Slate Canvas).
   - The ambient top dark scrim gradient on `MainFrame` is conditionally painted only when `isHomeViewActive == true`. On all other pages, a crisp light canvas header is maintained with zero paused video frames or dark overlays bleeding through.
+
+---
+
+## 11. Core Functional Milestones (Tier 1 Architecture & Motion Specs)
+
+### 11.1 Interactive Route Swap Button (`⇄`) in Search Capsule
+- **Architecture**: Integrated circular button (`swapBtn`, diameter 34px) nestled between the origin and destination station fields.
+- **Motion & Dynamics**:
+  - On click, executes an animated $180^\circ$ continuous rotation using a damped harmonic spring curve ($k = 180.0, \zeta = 0.68$).
+  - Two-way station synchronization: swaps both the underlying `Station` domain models and the visual text labels simultaneously.
+  - **Auto-Requery Integration**: Registers listener callbacks (`addSwapListener(Runnable)`) so that swapping stations on `TrainsPageView` automatically triggers `searchController.performSearch()` with the reversed route without requiring manual re-clicks.
+
+### 11.2 Standalone PNR Status Enquiry (`PnrStatusDialog` & `MyBookingsPageView`)
+- **Architecture**: A standalone modal dialog extending `ModernModalDialog` (720 x 680px), integrated seamlessly at the top of `MyBookingsPageView` for zero-login guest queries as well as post-booking pass lookups. Streamlines the top navigation bar into 3 clean view tabs (`Book Journey`, `Trains`, `My Bookings`).
+- **Visual Design & Typography**:
+  - Headline: Monumental **Bebas Neue Bold** (`30pt`, `#0F172A`) with zero icon clutter or subtitles.
+  - Search Bar: Full rounded pill input (`createPillTextField`, `arc: 999`, `#F8FAFC`) with Brand Orange focus ring and "CHECK STATUS" pill button (`#FA5909`).
+  - Quick-Fill Test Pills: One-click pills for `234-8901234 (CNF)`, `645-1234567 (RAC)`, and `812-9876543 (WL)`.
+  - Non-blocking asynchronous query via `SwingWorker` with friendly empty, loading, error, and result states.
+- **Result Presentation**:
+  - PNR pill badge, Status badge with tailored semantic palettes:
+    - Confirmed: Emerald Green (`#10B981` text on `#ECFDF5` pill)
+    - RAC: Amber (`#EA580C` text on `#FFF7ED` pill)
+    - Waitlist: Dark Amber (`#D97706` text on `#FEF3C7` pill)
+    - Cancelled: Coral Red (`#EF4444` text on `#FEF2F2` pill)
+  - Train itinerary card (`#F8FAFC`, 24px rounded corners, borderless) with departure/arrival times, station codes, class and quota.
+  - Tabular passenger allocation table: `#`, Passenger Name, Age/Gender, Berth Preference, and Current Seat Status (`Coach B2, Seat 34 (Lower)`).
+  - Real-time cancellation workflow with confirmation modal updating status immediately.
+
+### 11.3 Interactive Coach Seat Map (`CoachSeatSelectionDialog`, `CoachSeatMapPanel`, `SeatButton`)
+- **Architecture**: 2D railway carriage corridor representation supporting 3AC, 2AC, 1AC, CC (Chair Car / Vande Bharat), and Sleeper.
+- **Seat Button Component (`SeatButton`)**:
+  - Dimensions: 52 x 48px with 14px rounded corners (`arc: 14`).
+  - 3 States:
+    - **Available**: Crisp white card (`#FFFFFF`), hairline border (`#E2E8F0`), dark slate text (`#0F172A`), subtle ambient hover lift.
+    - **Booked**: Disabled slate gray (`#F1F5F9`), muted typography (`#94A3B8`), non-clickable.
+    - **Selected**: Brand Orange (`#FA5909`), bold white text, vibrant ambient glow shadow (`rgba(250, 89, 9, 0.25)`).
+  - Apple-like squash & stretch liquid recoil physics on press/click ($Scale_X = 1.06, Scale_Y = 0.94$).
+  - Berth abbreviation badges: Lower (`LB`), Middle (`MB`), Upper (`UB`), Side Lower (`SL`), Side Upper (`SU`), Window (`W`), Aisle (`A`).
+- **Carriage Geometry & Spatial Layout**:
+  - Exterior carriage shell with 36px rounded corners, entrance vestibules, and washroom indicators (`WC 1/2`, `WC 3/4`) at both ends.
+  - 3AC / Sleeper: 8 bays of 8 berths (6-berth main bay + walking aisle with dashed guideline + 2 side berths).
+  - 2AC: 8 bays of 6 berths (4-berth main bay + aisle + 2 side berths).
+  - CC: 12 rows of 3+2 seats with center aisle.
+  - Coach switcher tabs (`Coach B1`, `Coach B2`, `Coach B3`, `Coach B4`) allowing multi-coach inspection.
+  - Strict selection capacity limit tied to booking passenger count, with automatic FIFO roll-over and passenger row seat assignment.
+
+### 11.4 Mock Payment Gateway Modal (`PaymentGatewayDialog`)
+- **Architecture**: Secure checkout modal dialog extending `ModernModalDialog` (740 x 680px) with 256-bit SSL encryption badge and live fare summary.
+- **4 Payment Methods**:
+  1. **UPI & QR Code**: Vector-painted 2D QR matrix with finder patterns, 5-minute countdown timer (`05:00` ticking in real time), and UPI ID input (`rishu@okaxis`) with verification feedback.
+  2. **Credit / Debit Cards**: 16-digit card number field, cardholder name, expiry (MM/YY), CVV, and supported card badges (Visa, Mastercard, RuPay, Amex).
+  3. **Net Banking**: Quick selection tiles for major Indian banks (SBI, HDFC, ICICI, Axis) with active selection borders, plus dropdown for other nationalized banks.
+  4. **RailFlow Wallet**: Pre-loaded `₹5,000.00` balance card with 1-click instant confirmation and zero OTP delay.
+- **Liquid Authorization Simulation**:
+  - On clicking "PAY ₹X,XXX", switches to an animated processing card displaying a liquid orange indeterminate progress bar and multi-stage NPCI verification messages.
+  - Completes within 1.5 seconds, generating a verified transaction receipt (`TXN-XXXXXXXXX`), invoking the payment callback, saving the booking, and displaying the confirmed ticket card with a 1-click "CHECK PNR STATUS ↗" button.
+
+---
+
+## 12. Fleet Operations & Passenger Journey Polish (Tier 2 & 3 Architecture & Motion Specs)
+
+### 12.1 Commission New Train Modal (`AddTrainDialog`)
+- **Architecture**: Commissioning modal dialog extending `ModernModalDialog` ($640 \times 700\text{px}$) for Station Masters to add new rolling stock to the railway database.
+- **Visual Design & Geometry**:
+  - Headline: Monumental **Bebas Neue Bold** (`32pt`, `#0F172A`) with uppercase styling and zero header clutter.
+  - Card & Surfaces: Crisp pure white background (`#FFFFFF`), strictly **50px corner radius** (`arc: 100`), **0px border**, and 3-tier ambient soft drop shadows.
+  - Input Fields: **Full rounded pill inputs** (`arc: 999`, `#F8FAFC` fill, `#E2E8F0` border, `#FA5909` focus ring).
+  - Train Type Pill Dropdown: Styled selection for `VANDE_BHARAT`, `RAJDHANI`, `SHATABDI`, `SUPERFAST`, and `EXPRESS`.
+  - Day Schedule Bitmask Matrix: 7 interactive check-pills (`M`, `T`, `W`, `T`, `F`, `S`, `S`) encoding the operational run days.
+  - Seating Inventory Card: Configurable capacity and base fare inputs for 1AC, 2AC, 3AC, Sleeper, and Chair Car classes.
+  - Actions: Full rounded pill Brand Orange button (`COMMISSION TRAIN`) and subtle pill cancel button.
+
+### 12.2 Train Dispatch & Status Broadcaster (`EditTrainStatusDialog`)
+- **Architecture**: Dispatcher dialog extending `ModernModalDialog` ($520 \times 480\text{px}$) enabling operators to broadcast real-time operational status and schedule adjustments.
+- **Controls & Interaction**:
+  - Status Selection: Pill-styled segmented options (`ON_TIME`, `DELAYED`, `CANCELLED`, `DEPARTED`).
+  - Delay Management: Delay duration text field coupled with 4 rapid quick-fill chips:
+    - `+15m` (Minor technical check)
+    - `+30m` (Signal regulation)
+    - `+45m` (Platform clearance)
+    - `+60m` (Weather / fog delay)
+  - Broadcast Propagation: Immediately persists updates to the database via `TrainDAO.updateTrainStatus` and triggers instant status badge re-rendering (`DELAYED +Xm`, `CANCELLED`, `ON TIME`) across search results and passenger manifests.
+
+### 12.3 Electronic Reservation Slip Digital Pass (`ETicketPassDialog`)
+- **Architecture**: Official IRCTC-grade Electronic Reservation Slip (ERS) modal dialog ($760 \times 820\text{px}$) accessible from booking cards and booking confirmation receipts.
+- **Visual Presentation & Typography**:
+  - Card Curvature: 50px corner radius (`arc: 100`), borderless white sheet elevation.
+  - Header: Monumental **Bebas Neue Bold** (`30pt`) title `ELECTRONIC RESERVATION SLIP (ERS)` with PNR pill badge.
+  - Journey Header Bar: Origin station, destination station, rail distance in kilometers, scheduled departure/arrival timestamps, and travel class pill.
+  - 2D Barcode / QR Matrix: Custom Java 2D vector-rendered QR matrix with concentric position finder corners, encoding traveler PNR and security checksum.
+  - Passenger Manifest Berth Table: Clean slate table with `#`, Legal Name, Age/Gender, Coach, Seat Number, and Berth Preference.
+  - Fare Breakdown Card: Itemized receipt showing base ticket fare, IRCTC convenience charge, 5% railway GST, and confirmed gross amount paid.
+- **Export & Printing Pipeline**:
+  - **Native OS Printing (`PrinterJob`)**: Directly integrates with the system print dialog via `java.awt.print.Printable`, spooling crisp vector-rendered passes to connected printers or native PDF print drivers.
+  - **High-DPI Pass Image Export (`ImageIO`)**: Exports a high-fidelity 300 DPI PNG pass with file chooser dialog for offline passenger storage.
+
+### 12.4 Unified Live Status & Route Timetable (`LiveTrainTrackerDialog`)
+- **Architecture**: Unified real-time train tracking and timetable dialog ($800 \times 720\text{px}$) accessible directly from train result cards (`TIMETABLE & STATUS`) and train search views. Designed for ultra-minimalist transit clarity with whole-page unified scrolling.
+- **Features & Live Telemetry**:
+  - **Single Header**: Relies strictly on the OS title bar, completely removing redundant internal display titles.
+  - **Integrated Search & Date Row**: Compact pill input field for entering train number/name with an unadorned black search icon, accompanied by `Yesterday`, `Today`, `Tomorrow` day pills in the exact same row. Active day is highlighted in solid `#0F172A` black with white text.
+  - **Elevated Overview & Telemetry Card**: Consolidated white sheet card with 24px rounded corners (`arc: 24`), placed directly above the halts list, eliminating previous detached bottom bars. Displays train number, monumental Bebas Neue name, delay/status pill badge, next station proximity headline, route distance and speed metrics, and animated refresh button (`⟳`).
+  - **Unified Page Scroll**: Entire modal content (search row, overview card, column headers, and vertical halts timeline) is hosted within a single master `JScrollPane`, providing a seamless and unconstrained scrolling experience.
+
+### 12.5 Saved Travelers Master List Integration (`BookingDialog`)
+- **Architecture**: Co-traveler master list integration in the passenger details booking workflow.
+- **Interaction**:
+  - `SAVED TRAVELERS ▾` pill button positioned adjacent to passenger rows.
+  - Invokes an animated selection menu populated by `PassengerMasterDAO.getSavedPassengersByUserId`.
+  - 1-click auto-fill: Seamlessly populates traveler name, age, gender, and berth preference without tedious repetitive typing.
+  - Automatic co-traveler synchronization: Whenever an authenticated passenger confirms a booking with new travelers, they are automatically saved into the user's master list.
+
+---
+
+## 13. Dual-Mode Train Search & Frequent Travelers Management
+
+### 13.1 Dual-Mode Search Interface in Trains Tab (`TrainsPageView`)
+- **Segmented Search Mode Switcher**:
+  - Capsule: Compact `#F1F5F9` pill container (`arc: 999`) containing two selectable pills:
+    - `🔍 BY ROUTE (FROM ➔ TO)`
+    - `🚆 BY TRAIN (NAME OR NUMBER)`
+  - Active pill: Brand Orange `#FA5909` fill, white bold text; inactive pill: white fill, slate text.
+  - Instant transition using `CardLayout` without page reload or scroll jitter.
+- **Train Search Capsule Component**:
+  - Geometry: Full rounded pill card (`arc: 999`), 64px height, `#FFFFFF` pure white fill with multi-tier ambient soft drop shadow.
+  - Train Icon: Ambient amber/orange circle badge (`#FFF7ED`, 46px diameter) with railway emoji glyph.
+  - Search Input: Full pill text field with placeholder `"Enter 5-digit Train No. (e.g. 12952, 22436, 12004) or Train Name (e.g. Vande Bharat, Rajdhani)..."`.
+  - Action Button: Full pill Brand Orange CTA button (`FIND TRAIN`, width 130px, height 46px).
+  - Quick-Pick Flagship Chips: One-click interactive chips:
+    - `12952 Tejas Rajdhani`, `22436 Vande Bharat`, `12004 Shatabdi Express`, `12302 Howrah Rajdhani`, `20608 Vande Bharat`, `20901 Gandhinagar VB`.
+- **Result Presentation**:
+  - Displays full journey route cards (Origin station ➔ Terminus station), scheduled times, duration, distance, and coach class inventory.
+  - Direct Action Triggers on each train card:
+    - `LIVE STATUS & TIMETABLE 📡`: Opens `LiveTrainTrackerDialog` showing real-time operational status, delay in minutes, scheduled halt timings, distances, and platform tracks.
+    - `BOOK JOURNEY`: Initiates the booking flow.
+
+### 13.2 Saved Frequent Travelers Management (`SavedPassengersDialog`)
+- **Architecture**: Modal dialog extending `ModernModalDialog` ($740 \times 700\text{px}$, 50px card radius, 0px border) accessible via `"SAVED TRAVELERS 👥"` button in `MyBookingsPageView`.
+- **Sections**:
+  - **Co-Travelers Table**: Clean slate table displaying saved traveler records (Name, Age, Gender, Berth Preference) with individual `DELETE` actions.
+  - **Add Traveler Form**: Full pill text inputs for Legal Name, Age, Gender dropdown (`Male`, `Female`, `Other`), Berth Preference dropdown (`LOWER`, `MIDDLE`, `UPPER`, `SIDE LOWER`, `SIDE UPPER`, `WINDOW`, `NO PREFERENCE`), and Brand Orange submit button (`SAVE TO MASTER LIST 💾`).
+
+---
+
+### 11. Interactive Featured Destinations & Trip Planning (`PlanDestinationTripDialog`)
+- **Architecture**: Dedicated modal dialog extending `ModernModalDialog` ($580 \times 680\text{px}$, 50px card radius, zero border, application modality), triggered by clicking any destination card on the Home page (`FeaturedDestinationsSection`) or Plan My Trip page (`PlanMyTripView`).
+- **Visual Design**:
+  - **Destination Preview Card**: Rounded card (`arc: 32`, background `#F8FAFC`, border `#E2E8F0`) displaying monumental Bebas Neue monument title, location subtitle (`#64748B`), and brand orange mapped station code badge (`MAPPED STATION: AGC`).
+  - **Origin Station Dropdown (`FROM`)**: Full rounded pill combobox (`arc: 999`) populated from `StationDAO.getAllStations()`, with custom cell renderer formatting `Station Name (CODE) — City, State`.
+  - **Real-Time Dynamic Route Availability Alert Pill**:
+    - **Route Available (Direct Train)**: Emerald green pill (`#ECFDF5` background, `#059669` text, `#A7F3D0` border) displaying `✓ Direct train route available to [Destination] ([CODE])`.
+    - **No Route Available**: Coral red pill (`#FEF2F2` background, `#DC2626` text, `#FECACA` border) displaying `⚠️ No direct train route available from [Origin] to [Destination]. Please pick a different destination or starting station.`
+    - **Same Station Conflict**: Amber warning pill (`#FEF3C7` background, `#B45309` text) displaying `⚠️ Origin and destination station cannot be the same.`
+  - **Interactive Travel Controls**:
+    - Embedded `ModernDatePicker` defaulting to tomorrow.
+    - Full pill `TravelQuota` selector (`GENERAL`, `TATKAL`, `LADIES`, `SENIOR_CITIZEN`).
+    - Full pill `Preferred Seating Class` dropdown (`All Classes`, `1A`, `2A`, `3A`, `SL`, `CC`, `EC`).
+  - **Action Dispatcher**: Brand Orange pill button (`FIND TRAINS ↗`, `#FA5909`). When enabled, dismisses dialog and navigates directly to `TrainSearchResultsView`, populating live route search cards for that corridor. Disabled with gray fill (`#E2E8F0`) when route connectivity is unavailable.
+
+---
+
+### 12. Administrator Featured Destinations Management (`AdminDashboardView`, `AdminDestinationCard` & `AddDestinationDialog`)
+- **Admin Panel (`DESTINATIONS` Tab)**:
+  - Accessible via the left operational sidebar (`AdminSidebar`).
+  - **Zero Nested Card Framing**: Replaced the legacy single outer table card with an uncluttered, responsive 2-column showcase grid (`new GridLayout(0, 2, 16, 16)`) of discrete destination cards resting directly on the light `#EEF2F6` canvas.
+  - Header displays Bebas Neue `FEATURED DESTINATIONS` title, real-time count badge (`N SHOWCASED`), and `+ ADD DESTINATION` pill button (`#0284C7`).
+- **50px Borderless Destination Card (`AdminDestinationCard`)**:
+  - **Geometry & Elevation**: Strictly 50px rounded corners (`arc: 100`, `arcWidth = 100`, `arcHeight = 100`), pure white surface (`#FFFFFF`), zero hairline borders, multi-tier ambient soft drop shadows (`new Color(0, 0, 0, 6)` and `new Color(0, 0, 0, 12)`).
+  - **Left Thumbnail (4:3 Portrait Aspect Ratio)**: 135×180px portrait photo thumbnail (matching the 3:4 width:height / 4:3 vertical portrait aspect ratio of Instagram and RailFlow destination cards) with 32px rounded clipping, aspect-fill center cropping, and graceful placeholder gradient fallback.
+  - **Right Information (Unified Single-Column Stack)**:
+    - Monument title rendered in Bebas Neue 26px (`#0F172A`) across the full card width (preventing label truncation).
+    - Location text in Roboto 13px (`#64748B`).
+    - Station badge pill (`#F0F9FF` background, `#0284C7` text, `arc: 999`).
+    - Micro-Action controls directly below metadata:
+      - `EDIT`: Sky Blue tinted pill (`#EFF6FF` background, `#0284C7` text, `arc: 999`), opening the destination editor.
+      - `DELETE`: Coral Red tinted pill (`#FEF2F2` background, `#EF4444` text, `arc: 999`), triggering an explicit user confirmation dialog before removing from DAO/DB.
+- **Add & Edit Modal Dialog (`AddDestinationDialog`)**:
+  - Extends `ModernModalDialog` ($530 \times 600\text{px}$, 50px card radius, zero border).
+  - Dual operational modes: Commissioning (`ADD FEATURED DESTINATION`) and Editing (`EDIT FEATURED DESTINATION`).
+  - **PC Image Selection & Upload**: Integrated `JFileChooser` ("UPLOAD FROM PC") supporting PNG, JPG, JPEG, and WebP, automatically copying assets to `assets/images/` with live thumbnail preview (`imagePreviewBox`) inside the dialog, supplemented by preset bundled photography selectors.
+  - Commits updates or new records to `FeaturedDestinationDAO` (JDBC & in-memory fallback), immediately notifying all application views via reactive listeners.
+
+---
+
+### 13. Passenger Booking Manifest Inspection & E-Ticket Slip Interaction (`AdminDashboardView` & `ETicketPassDialog`)
+- **Manifest Table Interaction (`BOOKINGS` Tab)**:
+  - Accessible via the Station Master Administrator sidebar under `BOOKINGS`.
+  - Hosted within a 50px borderless rounded white sheet (`arc: 100`, background `#FFFFFF`) with custom multi-tier ambient shadow.
+  - Table headers rendered in Roboto Bold 12px (`#64748B`), rows with alternating selection fill (`#EFF6FF`).
+  - **Dynamic Cursor & Tooltip**: Hand cursor (`Cursor.HAND_CURSOR`) applied on row hover with informative tooltip: *"Click any booking row to view full passenger booking details and e-ticket pass"*.
+  - **Direct Row Click Trigger**: Clicking any row in the booking manifests table immediately extracts the selected PNR record and invokes the official Electronic Reservation Slip modal (`ETicketPassDialog`).
+  - **Explicit Bottom Action Bar**: Features a tip indicator on the left (`💡 Tip: Click any row to view complete booking details, passenger allocations & e-ticket pass`) and an explicit `VIEW BOOKING DETAILS` pill button on the right (`#0284C7`), enabling flexible keyboard/button interaction.
+  - **Clean Glyph Rendering**: Route formatting utilizes standard ASCII directional indicators (`FROM -> TO`), completely preventing missing font glyph artifacts (`▯`) across macOS rendering environments.
+- **Administrative Inspection & Cancellation Lifecycle**:
+  - `ETicketPassDialog` renders complete traveler details, coach assignments, berth numbers, quota, train timetable stepper, QR barcode, and fare breakdown receipt.
+  - Supports administrative ticket cancellation via `CANCEL RESERVATION ✕` (`#EF4444` pill button) powered by `CancelTicketModalDialog`.
+  - When a booking is cancelled from within the modal, the `onStatusChangedCallback` triggers a reactive refresh of `AdminDashboardView.refreshAllMetrics()`, immediately updating active passenger counts, gross revenue, donut seat class distributions, and manifest tables without requiring manual page reloads.
 

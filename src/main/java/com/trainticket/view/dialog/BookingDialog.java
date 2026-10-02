@@ -36,7 +36,7 @@ public class BookingDialog extends ModernModalDialog {
     private static final Color BRAND   = new Color(250, 89, 9);
     private static final Color SLATE   = new Color(15, 23, 42);
     private static final Color MUTED   = new Color(100, 116, 139);
-    private static final Color SURFACE = new Color(248, 250, 252);
+    private static final Color SURFACE = new Color(238, 242, 246);
     private static final Color BORDER_C = new Color(226, 232, 240);
 
     private final TrainSearchResult  searchResult;
@@ -165,9 +165,18 @@ public class BookingDialog extends ModernModalDialog {
         body.add(Box.createVerticalStrut(8));
 
         JButton addBtn = buildAddPassengerBtn();
-        JPanel addRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JButton savedBtn = buildSavedTravelersBtn();
+        JButton seatMapBtn = buildSeatMapBtn();
+
+        JPanel leftBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftBtns.setOpaque(false);
+        leftBtns.add(addBtn);
+        leftBtns.add(savedBtn);
+
+        JPanel addRow = new JPanel(new BorderLayout());
         addRow.setOpaque(false);
-        addRow.add(addBtn);
+        addRow.add(leftBtns, BorderLayout.WEST);
+        addRow.add(seatMapBtn, BorderLayout.EAST);
         body.add(addRow);
         body.add(Box.createVerticalStrut(16));
 
@@ -271,6 +280,91 @@ public class BookingDialog extends ModernModalDialog {
         return btn;
     }
 
+    private JButton buildSavedTravelersBtn() {
+        JButton btn = new JButton("SAVED TRAVELERS \u25BE");
+        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
+        btn.setForeground(new Color(2, 132, 199));
+        btn.setBackground(new Color(239, 246, 255));
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(2, 132, 199, 120), 1, true),
+                new EmptyBorder(6, 14, 6, 14)));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.putClientProperty(FlatClientProperties.STYLE, "arc: 999;");
+        btn.addActionListener(e -> {
+            User u = AuthSession.getInstance().getCurrentUser();
+            Long userId = (u != null) ? u.getId() : null;
+            List<com.trainticket.model.PassengerMasterRecord> saved = new com.trainticket.model.dao.PassengerMasterDAO().getPassengersForUser(userId);
+
+            JPopupMenu menu = new JPopupMenu();
+            menu.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
+            for (com.trainticket.model.PassengerMasterRecord r : saved) {
+                JMenuItem item = new JMenuItem(r.getFullName() + " (" + r.getAge() + " " + r.getGender() + ") \u2022 " + r.getBerthPreference());
+                item.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
+                item.addActionListener(ev -> populateSavedPassenger(r));
+                menu.add(item);
+            }
+            menu.show(btn, 0, btn.getHeight() + 4);
+        });
+        return btn;
+    }
+
+    private void populateSavedPassenger(com.trainticket.model.PassengerMasterRecord r) {
+        if (passengerRows.isEmpty()) {
+            addPassengerRow(r.getFullName());
+            passengerRows.get(0).setPassengerData(r.getFullName(), r.getAge(), r.getGender(), r.getBerthPreference());
+        } else {
+            PassengerRow first = passengerRows.get(0);
+            if (first.isNameEmpty()) {
+                first.setPassengerData(r.getFullName(), r.getAge(), r.getGender(), r.getBerthPreference());
+            } else if (passengerRows.size() < MAX_PASSENGERS) {
+                addPassengerRow(r.getFullName());
+                passengerRows.get(passengerRows.size() - 1).setPassengerData(r.getFullName(), r.getAge(), r.getGender(), r.getBerthPreference());
+            } else {
+                first.setPassengerData(r.getFullName(), r.getAge(), r.getGender(), r.getBerthPreference());
+            }
+        }
+        feedbackLabel.setText("Filled passenger: " + r.getFullName());
+        feedbackLabel.setForeground(new Color(16, 185, 129));
+    }
+
+    private JButton buildSeatMapBtn() {
+        JButton btn = new JButton("CHOOSE SEATS ON COACH MAP \u2197");
+        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
+        btn.setForeground(BRAND);
+        btn.setBackground(new Color(255, 247, 237));
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(250, 89, 9, 120), 1, true),
+                new EmptyBorder(6, 14, 6, 14)));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.putClientProperty(FlatClientProperties.STYLE, "arc: 999;");
+        btn.addActionListener(e -> openCoachSeatMap());
+        return btn;
+    }
+
+    private void openCoachSeatMap() {
+        List<CoachSeatSelectionDialog.SelectedSeat> initialSeats = new ArrayList<>();
+        for (PassengerRow pr : passengerRows) {
+            if (pr.hasAssignedSeat()) {
+                initialSeats.add(new CoachSeatSelectionDialog.SelectedSeat(
+                        pr.getAssignedCoach(), pr.getAssignedSeat(), pr.getAssignedBerthType()));
+            }
+        }
+        CoachSeatSelectionDialog dialog = new CoachSeatSelectionDialog(
+                this, coachAvailability.getClassCode(), passengerRows.size(), initialSeats,
+                chosenSeats -> {
+                    for (int i = 0; i < chosenSeats.size() && i < passengerRows.size(); i++) {
+                        CoachSeatSelectionDialog.SelectedSeat cs = chosenSeats.get(i);
+                        passengerRows.get(i).setAssignedSeat(cs.coachNumber(), cs.seatNumber(), cs.berthType());
+                    }
+                    feedbackLabel.setText("Seats selected on coach map: " + chosenSeats.size() + " assigned.");
+                    feedbackLabel.setForeground(new Color(16, 185, 129));
+                }
+        );
+        dialog.setVisible(true);
+    }
+
     private JPanel buildFareSummary() {
         JPanel card = new JPanel(new GridLayout(0, 2, 0, 5)) {
             @Override protected void paintComponent(Graphics g) {
@@ -347,14 +441,14 @@ public class BookingDialog extends ModernModalDialog {
         feedbackLabel.setForeground(new Color(239, 68, 68));
         strip.add(feedbackLabel, BorderLayout.CENTER);
 
-        JButton confirm = pillButton("CONFIRM & PAY", BRAND, Color.WHITE);
-        confirm.setPreferredSize(new Dimension(200, 46));
+        JButton confirm = pillButton("PROCEED TO PAYMENT", BRAND, Color.WHITE);
+        confirm.setPreferredSize(new Dimension(220, 46));
         confirm.addActionListener(e -> handleConfirm());
         strip.add(confirm, BorderLayout.EAST);
         return strip;
     }
 
-    // ── Confirm & Submit ───────────────────────────────────────────────────────
+    // ── Confirm & Submit via Payment Gateway ──────────────────────────────────
 
     private void handleConfirm() {
         feedbackLabel.setText(" ");
@@ -378,9 +472,11 @@ public class BookingDialog extends ModernModalDialog {
                 return;
             }
 
-            passengers.add(BookingPassenger.create(name, age, pr.getGender(), pr.getBerth(),
-                    "B" + (1 + new SecureRandom().nextInt(6)),
-                    (1 + new SecureRandom().nextInt(64))));
+            String coach = pr.hasAssignedSeat() ? pr.getAssignedCoach() : "B" + (1 + new SecureRandom().nextInt(4));
+            int seat = pr.hasAssignedSeat() ? pr.getAssignedSeat() : (1 + new SecureRandom().nextInt(64));
+            String berth = pr.hasAssignedSeat() ? pr.getAssignedBerthType() : pr.getBerth();
+
+            passengers.add(BookingPassenger.create(name, age, pr.getGender(), berth, coach, seat));
         }
 
         if (mobileField.getText().trim().isBlank()) {
@@ -388,6 +484,20 @@ public class BookingDialog extends ModernModalDialog {
             return;
         }
 
+        double fare = coachAvailability.getFinalFare() * 1.05 * passengers.size() + 40;
+        String trainSummary = searchResult.getTrain().getTrainNumber() + " " + searchResult.getTrain().getName()
+                + " (" + searchResult.getOriginHalt().getStation().getCode() + " \u2192 "
+                + searchResult.getDestinationHalt().getStation().getCode() + ")";
+
+        // Launch Mock Payment Gateway Modal
+        PaymentGatewayDialog paymentDialog = new PaymentGatewayDialog(
+                this, fare, trainSummary, paymentResult -> {
+            completeBooking(passengers, fare, paymentResult);
+        });
+        paymentDialog.setVisible(true);
+    }
+
+    private void completeBooking(List<BookingPassenger> passengers, double fare, PaymentGatewayDialog.PaymentResult paymentResult) {
         String pnr  = generatePnr();
         User user   = AuthSession.getInstance().getCurrentUser();
         Long userId = user != null ? user.getId() : null;
@@ -395,8 +505,6 @@ public class BookingDialog extends ModernModalDialog {
 
         LocalDate journeyDate = (searchQuery != null && searchQuery.getJourneyDate() != null)
                 ? searchQuery.getJourneyDate() : LocalDate.now().plusDays(1);
-
-        double fare = coachAvailability.getFinalFare() * 1.05 * passengers.size() + 40;
 
         Booking booking = new Booking(null, pnr, userId, contact,
                 searchResult.getTrain().getId(),
@@ -415,15 +523,33 @@ public class BookingDialog extends ModernModalDialog {
 
         BookingService.getInstance().createBooking(booking);
 
+        // Auto-save new co-travelers to Master List if authenticated
+        User currentUser = AuthSession.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getId() != null) {
+            com.trainticket.model.dao.PassengerMasterDAO pmDao = new com.trainticket.model.dao.PassengerMasterDAO();
+            List<com.trainticket.model.PassengerMasterRecord> existing = pmDao.getPassengersForUser(currentUser.getId());
+            for (BookingPassenger bp : passengers) {
+                boolean alreadySaved = existing.stream()
+                        .anyMatch(e -> e.getFullName().equalsIgnoreCase(bp.getPassengerName().trim()));
+                if (!alreadySaved && !bp.getPassengerName().trim().isBlank()) {
+                    String gCode = "Female".equalsIgnoreCase(bp.getGender()) ? "F" : "M";
+                    pmDao.savePassenger(currentUser.getId(), new com.trainticket.model.PassengerMasterRecord(
+                            null, currentUser.getId(), bp.getPassengerName().trim(), bp.getAge(), gCode, bp.getBerthPreference()
+                    ));
+                }
+            }
+        }
+
         setHeaderTitle("TICKET CONFIRMED");
-        JPanel successCard = buildSuccessCard(pnr, passengers, fare);
+        JPanel successCard = buildSuccessCard(pnr, passengers, fare, paymentResult);
         cardContainer.add(successCard, "SUCCESS");
         cardLayout.show(cardContainer, "SUCCESS");
     }
 
     // ── Success card ───────────────────────────────────────────────────────────
 
-    private JPanel buildSuccessCard(String pnr, List<BookingPassenger> passengers, double fare) {
+    private JPanel buildSuccessCard(String pnr, List<BookingPassenger> passengers, double fare,
+                                    PaymentGatewayDialog.PaymentResult paymentResult) {
         JPanel card = new JPanel(new BorderLayout(0, 14));
         card.setOpaque(false);
 
@@ -436,6 +562,16 @@ public class BookingDialog extends ModernModalDialog {
         ok.setForeground(new Color(16, 185, 129));
         ok.setAlignmentX(0.5f);
         center.add(ok);
+        center.add(Box.createVerticalStrut(6));
+
+        if (paymentResult != null) {
+            JLabel txnBadge = new JLabel("PAID VIA " + paymentResult.paymentMethod().toUpperCase()
+                    + " \u2022 TXN: " + paymentResult.transactionId(), SwingConstants.CENTER);
+            txnBadge.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
+            txnBadge.setForeground(MUTED);
+            txnBadge.setAlignmentX(0.5f);
+            center.add(txnBadge);
+        }
         center.add(Box.createVerticalStrut(10));
 
         JLabel pnrTitle = new JLabel("PNR NUMBER", SwingConstants.CENTER);
@@ -451,11 +587,11 @@ public class BookingDialog extends ModernModalDialog {
         center.add(pnrVal);
         center.add(Box.createVerticalStrut(12));
 
-        // Passenger table
+        // Passenger table with 4 columns
         JPanel paxTable = new JPanel(new GridLayout(0, 4, 8, 5));
         paxTable.setOpaque(false);
         paxTable.setBorder(new EmptyBorder(10, 12, 10, 12));
-        for (String h : new String[]{"PASSENGER", "AGE", "GENDER", "BERTH"}) {
+        for (String h : new String[]{"PASSENGER", "AGE/GENDER", "COACH & SEAT", "BERTH"}) {
             JLabel l = new JLabel(h);
             l.setFont(AssetManager.getFont("Roboto", Font.BOLD, 9f));
             l.setForeground(MUTED);
@@ -463,8 +599,8 @@ public class BookingDialog extends ModernModalDialog {
         }
         for (BookingPassenger p : passengers) {
             detailLabel(paxTable, p.getPassengerName());
-            detailLabel(paxTable, String.valueOf(p.getAge()));
-            detailLabel(paxTable, p.getGender());
+            detailLabel(paxTable, p.getAge() + " / " + p.getGender());
+            detailLabel(paxTable, "Coach " + p.getCoachNumber() + ", Seat " + p.getSeatNumber());
             detailLabel(paxTable, p.getBerthPreference());
         }
         center.add(paxTable);
@@ -485,12 +621,31 @@ public class BookingDialog extends ModernModalDialog {
 
         card.add(center, BorderLayout.CENTER);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
         btnRow.setOpaque(false);
+
+        JButton viewPassBtn = pillButton("VIEW & PRINT E-TICKET \u2197", new Color(2, 132, 199), Color.WHITE);
+        viewPassBtn.setPreferredSize(new Dimension(200, 42));
+        viewPassBtn.addActionListener(e -> {
+            Booking b = BookingService.getInstance().getBookingByPnr(pnr);
+            if (b != null) {
+                new ETicketPassDialog(BookingDialog.this, b).setVisible(true);
+            }
+        });
+        btnRow.add(viewPassBtn);
+
+        JButton checkPnrBtn = pillButton("CHECK PNR STATUS \u2197", BRAND, Color.WHITE);
+        checkPnrBtn.setPreferredSize(new Dimension(190, 42));
+        checkPnrBtn.addActionListener(e -> {
+            new PnrStatusDialog(BookingDialog.this, pnr).setVisible(true);
+        });
+        btnRow.add(checkPnrBtn);
+
         JButton done = pillButton("CLOSE", SLATE, Color.WHITE);
-        done.setPreferredSize(new Dimension(160, 42));
+        done.setPreferredSize(new Dimension(140, 42));
         done.addActionListener(e -> dispose());
         btnRow.add(done);
+
         card.add(btnRow, BorderLayout.SOUTH);
 
         return card;
@@ -597,6 +752,9 @@ public class BookingDialog extends ModernModalDialog {
         private final JTextField ageField;
         private final ModernSmoothDropdown<String> genderDropdown;
         private final ModernSmoothDropdown<String> berthDropdown;
+        private String assignedCoach;
+        private int assignedSeat = 0;
+        private String assignedBerthType;
 
         PassengerRow(int index, String defaultName, Consumer<PassengerRow> onRemove) {
             setLayout(new GridLayout(1, 6, 6, 0));
@@ -645,13 +803,70 @@ public class BookingDialog extends ModernModalDialog {
         }
 
         void setIndex(int i) {
-            indexLbl.setText(String.valueOf(i));
+            if (hasAssignedSeat()) {
+                indexLbl.setText(i + " (" + assignedCoach + "-" + assignedSeat + ")");
+            } else {
+                indexLbl.setText(String.valueOf(i));
+            }
             getComponent(5).setVisible(i > 1);
         }
+
+        void setAssignedSeat(String coach, int seat, String berthType) {
+            this.assignedCoach = coach;
+            this.assignedSeat = seat;
+            this.assignedBerthType = berthType;
+            indexLbl.setText(indexLbl.getText().split(" ")[0] + " (" + coach + "-" + seat + ")");
+            indexLbl.setToolTipText("Seat: Coach " + coach + ", Seat " + seat + " (" + berthType + ")");
+            indexLbl.setForeground(BRAND);
+            if (berthType != null) {
+                for (String b : java.util.List.of("Lower", "Middle", "Upper", "Side Lower", "Side Upper")) {
+                    if (berthType.toUpperCase().contains(b.toUpperCase())) {
+                        berthDropdown.setSelectedItem(b);
+                        break;
+                    }
+                }
+            }
+            repaint();
+        }
+
+        boolean hasAssignedSeat() {
+            return assignedSeat > 0;
+        }
+
+        String getAssignedCoach() { return assignedCoach; }
+        int getAssignedSeat() { return assignedSeat; }
+        String getAssignedBerthType() { return assignedBerthType; }
 
         public String getPassengerName() { return nameField.getText(); }
         String getAge()   { return ageField.getText(); }
         String getGender(){ return genderDropdown.getSelectedItem(); }
         String getBerth() { return berthDropdown.getSelectedItem(); }
+
+        boolean isNameEmpty() {
+            return nameField.getText().trim().isEmpty();
+        }
+
+        void setPassengerData(String name, int age, String gender, String berth) {
+            if (name != null) nameField.setText(name);
+            if (age > 0) ageField.setText(String.valueOf(age));
+            if (gender != null) {
+                if ("F".equalsIgnoreCase(gender) || "Female".equalsIgnoreCase(gender)) {
+                    genderDropdown.setSelectedItem("Female");
+                } else if ("T".equalsIgnoreCase(gender) || "Transgender".equalsIgnoreCase(gender)) {
+                    genderDropdown.setSelectedItem("Transgender");
+                } else {
+                    genderDropdown.setSelectedItem("Male");
+                }
+            }
+            if (berth != null) {
+                for (String b : java.util.List.of("Lower", "Middle", "Upper", "Side Lower", "Side Upper")) {
+                    if (berth.toUpperCase().contains(b.toUpperCase())) {
+                        berthDropdown.setSelectedItem(b);
+                        break;
+                    }
+                }
+            }
+            repaint();
+        }
     }
 }

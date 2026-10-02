@@ -60,17 +60,21 @@ public class DatabaseSeederTest {
         boolean hasTrainsTable = statements.stream().anyMatch(s -> s.toUpperCase().contains("CREATE TABLE IF NOT EXISTS TRAINS"));
         boolean hasBookingsTable = statements.stream().anyMatch(s -> s.toUpperCase().contains("CREATE TABLE IF NOT EXISTS BOOKINGS"));
         boolean hasUsersTable = statements.stream().anyMatch(s -> s.toUpperCase().contains("CREATE TABLE IF NOT EXISTS USERS"));
+        boolean hasSavedPassengersTable = statements.stream().anyMatch(s -> s.toUpperCase().contains("CREATE TABLE IF NOT EXISTS SAVED_PASSENGERS"));
 
         assertTrue(hasStationsTable, "Schema must define stations table");
         assertTrue(hasTrainsTable, "Schema must define trains table");
         assertTrue(hasBookingsTable, "Schema must define bookings table");
         assertTrue(hasUsersTable, "Schema must define users table");
+        assertTrue(hasSavedPassengersTable, "Schema must define saved_passengers table");
 
         // Verify iconic trains seeded
         boolean hasRajdhani = statements.stream().anyMatch(s -> s.contains("12952"));
         boolean hasVandeBharat = statements.stream().anyMatch(s -> s.contains("22436"));
+        boolean hasSavedPassengerSeed = statements.stream().anyMatch(s -> s.contains("Priya Sharma"));
         assertTrue(hasRajdhani, "Schema should seed Tejas Rajdhani Express (12952)");
         assertTrue(hasVandeBharat, "Schema should seed Vande Bharat Express (22436)");
+        assertTrue(hasSavedPassengerSeed, "Schema should seed sample saved passengers");
     }
 
     @Test

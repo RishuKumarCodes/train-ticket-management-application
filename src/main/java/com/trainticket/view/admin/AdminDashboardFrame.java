@@ -8,11 +8,36 @@ import com.trainticket.util.db.DatabaseConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -44,7 +69,7 @@ public class AdminDashboardFrame extends JFrame {
         setSize(1280, 820);
         setMinimumSize(new Dimension(1080, 680));
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(248, 250, 252)); // #F8FAFC
+        getContentPane().setBackground(new Color(238, 242, 246)); // Slate-150 canvas
 
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
@@ -58,20 +83,20 @@ public class AdminDashboardFrame extends JFrame {
 
     private void initComponents() {
         JPanel root = new JPanel(new BorderLayout(0, 0));
-        root.setBackground(new Color(248, 250, 252));
+        root.setBackground(new Color(238, 242, 246));
 
         // 1. Left Operational Sidebar (250px)
         root.add(createSidebar(), BorderLayout.WEST);
 
         // 2. Right Working Area (Top Command Bar + Center Panel)
         JPanel rightArea = new JPanel(new BorderLayout());
-        rightArea.setBackground(new Color(248, 250, 252));
+        rightArea.setBackground(new Color(238, 242, 246));
 
         rightArea.add(createTopCommandBar(), BorderLayout.NORTH);
 
         cardLayout = new CardLayout();
         mainContentCard = new JPanel(cardLayout);
-        mainContentCard.setBackground(new Color(248, 250, 252));
+        mainContentCard.setBackground(new Color(238, 242, 246));
 
         mainContentCard.add(createOverviewPanel(), "OVERVIEW");
         mainContentCard.add(createFleetPlaceholderPanel(), "FLEET");
@@ -191,7 +216,7 @@ public class AdminDashboardFrame extends JFrame {
         bar.setBackground(Color.WHITE);
         bar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)),
-                new EmptyBorder(16, 28, 16, 28)
+                new EmptyBorder(28, 28, 16, 28)
         ));
 
         // Live Clock
@@ -199,22 +224,6 @@ public class AdminDashboardFrame extends JFrame {
         clockLabel.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
         clockLabel.setForeground(new Color(15, 23, 42)); // #0F172A
         bar.add(clockLabel, BorderLayout.WEST);
-
-        // Status Badges
-        JPanel statusBadges = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
-        statusBadges.setOpaque(false);
-
-        boolean dbOk = DatabaseConnectionPool.testConnection();
-        JLabel dbBadge = new JLabel(dbOk ? "● HIKARICP: ONLINE" : "● RUNTIME: IN-MEMORY DEV FALLBACK");
-        dbBadge.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
-        dbBadge.setForeground(dbOk ? new Color(16, 185, 129) : new Color(234, 88, 12)); // Green or Amber
-        dbBadge.setBorder(new EmptyBorder(4, 12, 4, 12));
-        dbBadge.putClientProperty(FlatClientProperties.STYLE,
-                dbOk ? "arc: 999; background: #ECFDF5; borderWidth: 0;"
-                     : "arc: 999; background: #FFF7ED; borderWidth: 0;");
-        statusBadges.add(dbBadge);
-
-        bar.add(statusBadges, BorderLayout.EAST);
 
         return bar;
     }
@@ -258,6 +267,8 @@ public class AdminDashboardFrame extends JFrame {
         };
 
         DefaultTableModel model = new DefaultTableModel(data, columns) {
+            private static final long serialVersionUID = 1L;
+
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -283,6 +294,8 @@ public class AdminDashboardFrame extends JFrame {
 
         // Status column renderer
         table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean sel, boolean foc, int r, int c) {
                 JLabel l = (JLabel) super.getTableCellRendererComponent(t, val, sel, foc, r, c);
@@ -351,7 +364,7 @@ public class AdminDashboardFrame extends JFrame {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.putClientProperty(FlatClientProperties.STYLE, "arc: 24; background: #FFFFFF;");
-        card.setBorder(new com.formdev.flatlaf.ui.FlatLineBorder(new Insets(36, 44, 36, 44), new Color(226, 232, 240), 1, 24));
+        card.setBorder(new EmptyBorder(36, 44, 36, 44));
 
         JLabel t = new JLabel(title);
         t.setFont(AssetManager.getFont("Roboto", Font.BOLD, 18f));

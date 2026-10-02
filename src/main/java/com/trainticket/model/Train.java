@@ -19,12 +19,19 @@ public final class Train {
     private final Station destStation;
     private final String runsOnDays; // 7-character bitmask "1111111" (Mon..Sun)
     private final TrainStatus status;
+    private final int delayMinutes;
     private final List<RouteHalt> routeHalts;
     private final List<CoachAvailability> coachClasses;
 
     public Train(long id, String trainNumber, String name, TrainType type, 
                  Station sourceStation, Station destStation, String runsOnDays, 
                  TrainStatus status, List<RouteHalt> routeHalts, List<CoachAvailability> coachClasses) {
+        this(id, trainNumber, name, type, sourceStation, destStation, runsOnDays, status, 0, routeHalts, coachClasses);
+    }
+
+    public Train(long id, String trainNumber, String name, TrainType type, 
+                 Station sourceStation, Station destStation, String runsOnDays, 
+                 TrainStatus status, int delayMinutes, List<RouteHalt> routeHalts, List<CoachAvailability> coachClasses) {
         this.id = id;
         this.trainNumber = Objects.requireNonNull(trainNumber, "Train number cannot be null").trim();
         this.name = Objects.requireNonNull(name, "Train name cannot be null").trim();
@@ -33,6 +40,7 @@ public final class Train {
         this.destStation = Objects.requireNonNull(destStation, "Destination station cannot be null");
         this.runsOnDays = (runsOnDays != null && runsOnDays.length() == 7) ? runsOnDays : "1111111";
         this.status = status != null ? status : TrainStatus.ON_TIME;
+        this.delayMinutes = Math.max(0, delayMinutes);
         this.routeHalts = routeHalts != null ? Collections.unmodifiableList(new ArrayList<>(routeHalts)) : Collections.emptyList();
         this.coachClasses = coachClasses != null ? Collections.unmodifiableList(new ArrayList<>(coachClasses)) : Collections.emptyList();
     }
@@ -67,6 +75,31 @@ public final class Train {
 
     public TrainStatus getStatus() {
         return status;
+    }
+
+    public int getDelayMinutes() {
+        return delayMinutes;
+    }
+
+    public String getFormattedDelay() {
+        if (status == TrainStatus.CANCELLED) {
+            return "CANCELLED";
+        }
+        if (status == TrainStatus.DEPARTED) {
+            return "DEPARTED";
+        }
+        if (delayMinutes > 0) {
+            return "+" + delayMinutes + "m Delay";
+        }
+        return "On Time";
+    }
+
+    public Train withStatus(TrainStatus newStatus, int newDelayMinutes) {
+        return new Train(id, trainNumber, name, type, sourceStation, destStation, runsOnDays, newStatus, newDelayMinutes, routeHalts, coachClasses);
+    }
+
+    public Train withCoachClasses(List<CoachAvailability> newClasses) {
+        return new Train(id, trainNumber, name, type, sourceStation, destStation, runsOnDays, status, delayMinutes, routeHalts, newClasses);
     }
 
     public List<RouteHalt> getRouteHalts() {

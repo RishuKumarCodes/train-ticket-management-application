@@ -1,22 +1,20 @@
 package com.trainticket.view.component.home;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JPanel;
+import com.trainticket.model.FeaturedDestination;
+import com.trainticket.model.dao.FeaturedDestinationDAO;
+
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridLayout;
-import java.awt.RenderingHints;
+import java.awt.*;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Featured Destinations Section for the RailFlow landing page.
  * Displays a pure crisp white sheet background with 70px rounded corners,
  * subtle drop shadow, watermarked header ({@link FeaturedDestinationsHeader}),
  * and a 3-column responsive card grid of {@link DestinationImageCard}s.
+ * Listens to {@link FeaturedDestinationDAO} to dynamically reflect additions/removals.
  */
 public class FeaturedDestinationsSection extends JPanel {
 
@@ -36,6 +34,7 @@ public class FeaturedDestinationsSection extends JPanel {
 
     private final FeaturedDestinationsHeader header;
     private final JPanel cardsGrid;
+    private Consumer<FeaturedDestination> destinationSelectListener;
 
     public FeaturedDestinationsSection() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -55,11 +54,32 @@ public class FeaturedDestinationsSection extends JPanel {
         cardsGrid.setMaximumSize(new Dimension(1200, Integer.MAX_VALUE));
         cardsGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        for (String[] entry : FEATURED_DESTINATION_IMAGES) {
-            cardsGrid.add(new DestinationImageCard(entry[0], entry[1], entry[2], entry[3]));
+        rebuildCardsGrid();
+        add(cardsGrid);
+
+        FeaturedDestinationDAO.getInstance().addChangeListener(() -> SwingUtilities.invokeLater(this::rebuildCardsGrid));
+    }
+
+    public void setDestinationSelectListener(Consumer<FeaturedDestination> listener) {
+        this.destinationSelectListener = listener;
+        rebuildCardsGrid();
+    }
+
+    public void rebuildCardsGrid() {
+        cardsGrid.removeAll();
+        List<FeaturedDestination> destinations = FeaturedDestinationDAO.getInstance().getAllDestinations();
+
+        for (FeaturedDestination dest : destinations) {
+            DestinationImageCard card = new DestinationImageCard(dest, () -> {
+                if (destinationSelectListener != null) {
+                    destinationSelectListener.accept(dest);
+                }
+            });
+            cardsGrid.add(card);
         }
 
-        add(cardsGrid);
+        cardsGrid.revalidate();
+        cardsGrid.repaint();
     }
 
     @Override

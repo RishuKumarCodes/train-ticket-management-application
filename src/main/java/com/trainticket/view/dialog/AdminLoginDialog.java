@@ -87,6 +87,9 @@ public class AdminLoginDialog extends ModernModalDialog {
                 new Color(2, 101, 151),
                 Color.WHITE
         );
+        authorizeBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        authorizeBtn.setPreferredSize(new Dimension(416, 44));
+        authorizeBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         authorizeBtn.addActionListener(e -> performAdminLogin());
         centerPanel.add(authorizeBtn);
 
@@ -96,7 +99,7 @@ public class AdminLoginDialog extends ModernModalDialog {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER));
         footer.setOpaque(false);
 
-        JButton returnBtn = new JButton("← Back to Passenger Window");
+        JButton returnBtn = new JButton("< Back to Passenger Window");
         returnBtn.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 12f));
         returnBtn.setPreferredSize(new Dimension(240, 36));
         returnBtn.setFocusPainted(false);
@@ -163,18 +166,13 @@ public class AdminLoginDialog extends ModernModalDialog {
     private void styleAdminInput(JTextField field, String placeholder) {
         field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         field.setPreferredSize(new Dimension(416, 42));
-        field.setFont(AssetManager.getFont("Roboto", Font.BOLD, 13f));
+        field.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 13f));
         field.setForeground(new Color(15, 23, 42));
         field.setCaretColor(new Color(2, 132, 199));
-        field.setBorder(new EmptyBorder(0, 18, 0, 18));
         field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         field.putClientProperty(FlatClientProperties.STYLE,
-                "arc: 999; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
-                "focusedBorderColor: #0284C7; focusedBackground: #FFFFFF;");
-        if (field instanceof JPasswordField) {
-            field.putClientProperty(FlatClientProperties.STYLE,
-                    "arc: 999; background: #F8FAFC; borderWidth: 1; borderColor: #E2E8F0; " +
-                    "focusedBorderColor: #0284C7; focusedBackground: #FFFFFF; showRevealButton: true;");
-        }
+                "arc: 999; margin: 0,16,0,16; background: #F1F5F9; borderWidth: 1; borderColor: #CBD5E1; " +
+                "focusedBorderColor: #0284C7; focusedBackground: #FFFFFF;" +
+                (field instanceof JPasswordField ? " showRevealButton: true;" : ""));
     }
 }

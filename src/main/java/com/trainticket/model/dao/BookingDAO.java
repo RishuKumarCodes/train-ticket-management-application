@@ -37,6 +37,7 @@ public class BookingDAO {
 
     private void seedSampleBookingsIfEmpty() {
         if (IN_MEMORY_BOOKINGS.isEmpty()) {
+            // 1. Confirmed Booking
             List<BookingPassenger> passengers1 = List.of(
                     BookingPassenger.create("Rishu Kumar", 26, "M", "LOWER", "B2", 34)
             );
@@ -63,6 +64,63 @@ public class BookingDAO {
                     passengers1
             );
             IN_MEMORY_BOOKINGS.put(sample1.getPnr(), sample1);
+
+            // 2. RAC Booking
+            List<BookingPassenger> passengers2 = List.of(
+                    new BookingPassenger(null, "Priya Sharma", 24, "F", "SIDE LOWER", "B1", 12, "RAC 12"),
+                    new BookingPassenger(null, "Rahul Sharma", 28, "M", "SIDE LOWER", "B1", 13, "RAC 13")
+            );
+            Booking sample2 = new Booking(
+                    2L,
+                    "645-1234567",
+                    null,
+                    "priya@example.com",
+                    12301L,
+                    "12301",
+                    "Howrah Rajdhani Express",
+                    LocalDate.now().plusDays(3),
+                    "HWH",
+                    "Howrah Junction",
+                    "NDLS",
+                    "New Delhi",
+                    "16:50",
+                    "10:05",
+                    "2A",
+                    "GENERAL",
+                    4920.0,
+                    "RAC",
+                    LocalDateTime.now().minusHours(12),
+                    passengers2
+            );
+            IN_MEMORY_BOOKINGS.put(sample2.getPnr(), sample2);
+
+            // 3. Waitlisted Booking
+            List<BookingPassenger> passengers3 = List.of(
+                    new BookingPassenger(null, "Amit Patel", 35, "M", "MIDDLE", "WL", 45, "WL 45")
+            );
+            Booking sample3 = new Booking(
+                    3L,
+                    "812-9876543",
+                    null,
+                    "amit.p@example.com",
+                    11041L,
+                    "11041",
+                    "CSMT Chennai Express",
+                    LocalDate.now().plusDays(4),
+                    "CSMT",
+                    "Mumbai CSMT",
+                    "MAS",
+                    "Chennai Central",
+                    "14:00",
+                    "16:45",
+                    "SL",
+                    "GENERAL",
+                    560.0,
+                    "WL",
+                    LocalDateTime.now().minusHours(24),
+                    passengers3
+            );
+            IN_MEMORY_BOOKINGS.put(sample3.getPnr(), sample3);
         }
     }
 
@@ -189,17 +247,67 @@ public class BookingDAO {
     }
 
     public Booking findByPnr(String pnr) {
-        if (pnr == null) return null;
-        return IN_MEMORY_BOOKINGS.get(pnr.trim());
+        if (pnr == null || pnr.isBlank()) return null;
+        String cleanInput = pnr.replaceAll("[^a-zA-Z0-9]", "").trim();
+        for (Booking b : IN_MEMORY_BOOKINGS.values()) {
+            String cleanStored = b.getPnr().replaceAll("[^a-zA-Z0-9]", "").trim();
+            if (cleanStored.equalsIgnoreCase(cleanInput) || b.getPnr().equalsIgnoreCase(pnr.trim())) {
+                return b;
+            }
+        }
+        return null;
     }
 
     public boolean cancelBooking(String pnr) {
-        if (pnr == null) return false;
-        Booking existing = IN_MEMORY_BOOKINGS.get(pnr.trim());
+        if (pnr == null || pnr.isBlank()) return false;
+        String cleanPnr = pnr.trim();
+
+        // 1. Database persistence if connection pool is available
+        if (DatabaseConnectionPool.isAvailable()) {
+            String updateBookingSql = "UPDATE bookings SET status = 'CANCELLED' WHERE pnr = ?";
+            String updatePassengersSql = "UPDATE booking_passengers SET status = 'CANCELLED' WHERE booking_id = (SELECT id FROM bookings WHERE pnr = ?)";
+            try (Connection conn = DatabaseConnectionPool.getConnection()) {
+                conn.setAutoCommit(false);
+                try (PreparedStatement stmt1 = conn.prepareStatement(updateBookingSql);
+                     PreparedStatement stmt2 = conn.prepareStatement(updatePassengersSql)) {
+                    stmt1.setString(1, cleanPnr);
+                    stmt1.executeUpdate();
+                    stmt2.setString(1, cleanPnr);
+                    stmt2.executeUpdate();
+                    conn.commit();
+                    logger.info("Database transaction committed: Cancelled booking PNR {}", cleanPnr);
+                } catch (SQLException ex) {
+                    conn.rollback();
+                    logger.error("Failed to cancel booking in database for PNR {}", cleanPnr, ex);
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                logger.error("Database connection error cancelling booking PNR {}", cleanPnr, ex);
+            }
+        }
+
+        // 2. In-memory update fallback / sync
+        Booking existing = findByPnr(cleanPnr);
         if (existing != null) {
-            Booking updated = existing.withStatus("CANCELLED");
-            IN_MEMORY_BOOKINGS.put(pnr.trim(), updated);
-            logger.info("Cancelled booking PNR {}", pnr);
+            List<BookingPassenger> cancelledPassengers = new ArrayList<>();
+            for (BookingPassenger p : existing.getPassengers()) {
+                cancelledPassengers.add(new BookingPassenger(
+                        p.getId(), p.getPassengerName(), p.getAge(), p.getGender(),
+                        p.getBerthPreference(), p.getCoachNumber(), p.getSeatNumber(), "CANCELLED"
+                ));
+            }
+            Booking updated = new Booking(
+                    existing.getId(), existing.getPnr(), existing.getUserId(), existing.getUserIdentifier(),
+                    existing.getTrainId(), existing.getTrainNumber(), existing.getTrainName(),
+                    existing.getJourneyDate(), existing.getFromStationCode(), existing.getFromStationName(),
+                    existing.getToStationCode(), existing.getToStationName(),
+                    existing.getDepartureTime(), existing.getArrivalTime(),
+                    existing.getClassCode(), existing.getQuotaCode(), existing.getTotalFare(),
+                    "CANCELLED", existing.getCreatedAt(), cancelledPassengers
+            );
+            IN_MEMORY_BOOKINGS.put(existing.getPnr(), updated);
+            logger.info("In-memory store updated: Cancelled booking PNR {}", existing.getPnr());
             return true;
         }
         return false;

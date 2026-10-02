@@ -18,16 +18,26 @@
 ### 1.2 Multi-Criteria Train Search
 1. Open the search capsule on either the Home screen or the Trains page.
 2. **Origin & Destination**: Use the animated smooth dropdown (`ModernSmoothDropdown`) to search stations by city or 3-4 letter code (e.g. `NDLS`, `MMCT`, `HWH`, `BSB`).
-3. **Journey Date**: Open the calendar picker (`ModernDatePicker`) to select your travel date or use rapid shortcut pills (`Today`, `Tomorrow`, `+7 Days`).
+3. **Journey Date**: Open the calendar picker (`ModernDatePicker`) to select your travel date or use rapid shortcut presets (`Today`, `Tomorrow`, `+7 Days`).
 4. **Quota & Concession**: Optionally select travel quota (General, Tatkal +30%, Premium Tatkal +50%, All AC) and concession (None, Divyangjan 50% discount, Railway Pass ₹40).
-5. Click **Search Trains** (Brand Orange pill CTA).
+5. Click **Search Trains** (Brand Orange pill CTA) to navigate directly to the dedicated **Route Search Results Page** (`TrainSearchResultsView`).
 
-### 1.3 Train Schedules, Sorting & Timetables
-1. On the search results stream:
-   - Sort by **Earliest Departure**, **Fastest Duration**, **Latest Arrival**, or **Available Seats**.
+### 1.3 Route Search Results vs. Trains Fleet Tab
+1. **Route Search Results Page (`TrainSearchResultsView`)**:
+   - Displays all matching train runs between the queried origin and destination stations.
+   - Includes the pre-filled top `SearchCapsulePanel` allowing instant re-queries or station swapping (`⇄`) on the fly.
+   - Sort by **Earliest Departure**, **Fastest Duration**, **Earliest Arrival**, or **Available Seats**.
    - Review journey metrics: Departure/Arrival times, transit duration, distance in km, and train type badge (Vande Bharat, Rajdhani, Shatabdi, Superfast).
-2. Click **View Route & Halts** to open [`TrainRouteTimetableDialog`](../../src/main/java/com/trainticket/view/dialog/TrainRouteTimetableDialog.java) showing station-wise halt durations and live transit tracker.
-3. Select desired coach class pill (e.g. `3A`, `2A`, `1A`, `SL`, `CC`, `EC`) showing live seat availability (`AVAILABLE`, `RAC`, `WL`) and calculated fare.
+   - Click `TIMETABLE & STATUS` to open [`LiveTrainTrackerDialog`](../../src/main/java/com/trainticket/view/dialog/LiveTrainTrackerDialog.java).
+   - Select desired coach class pill (e.g. `3A`, `2A`, `1A`, `SL`, `CC`, `EC`) showing live seat availability and calculated fare.
+   - Click `← BACK TO HOME` to return to the hero screen anytime.
+
+2. **Trains Tab: Fleet Discovery & Train Number Search (`TrainsPageView`)**:
+   - Click the **Trains** tab on the navigation bar to enter the fleet discovery catalog.
+   - Search by 5-digit Train Number (e.g. `12952`, `22436`, `12004`) or Train Name (e.g. `Vande Bharat`, `Rajdhani`, `Shatabdi`, `Tejas`).
+   - Use quick-filter flagship chips (`12952 Tejas Rajdhani`, `22436 Vande Bharat`, `12004 Shatabdi Express`, etc.) to jump straight to iconic trains.
+   - Click `SHOW ALL FLEET` to browse all 100+ active trains in the national railway roster.
+   - Inspect train route halts, timings, and live status directly from each card.
 
 ### 1.4 Instant Reservation & PNR Generation
 1. Click **Book Now** on the selected train result card.
@@ -35,11 +45,16 @@
 3. Review fare summary and click **Confirm & Issue Ticket**.
 4. The system issues a unique 10-digit PNR and automatically records the booking in your account.
 
-### 1.5 Managing Bookings & Ticket Cancellation
-1. Navigate to the **My Bookings** tab.
-2. If operating as a guest, click **Sign In** to view your history or look up a ticket by PNR.
-3. Review your confirmed ticket cards displaying PNR badges, travel stations, scheduled timings, and assigned passenger berth allocations (`B1-12`).
-4. Click **Cancel Ticket** to trigger the cancellation confirmation modal and calculate refundable fare.
+### 1.5 Checking PNR Status & Managing Bookings
+1. Navigate to the **My Bookings** tab on the top navigation bar.
+2. **Instant PNR Lookup (Zero Login Required)**:
+   - Enter any 10-digit PNR in the **CHECK ANY PNR STATUS** search capsule anchored at the top of the page.
+   - Click **CHECK STATUS** (or select a quick sample pill) to open [`PnrStatusDialog`](../../src/main/java/com/trainticket/view/dialog/PnrStatusDialog.java) and inspect live confirmation status, assigned coach/berth, or print an official E-Ticket pass.
+3. **Personal Booking Expeditions**:
+   - If logged in, all your confirmed ticket cards appear directly below the search bar, with PNR badges, scheduled timings, passenger berth allocations (`B1-12`), and a **SAVED TRAVELERS 👥** management button.
+   - If operating as a guest, click **LOG IN / SIGN UP** to sync bookings to your account.
+4. **Ticket Cancellation**:
+   - Click **Cancel Ticket** on any booking card (or from the PNR Status modal) to trigger immediate cancellation, release seat inventory back to the fleet, and view refund totals.
 
 ---
 
@@ -60,6 +75,9 @@
   - Junction catalogs with station codes, platform counts, railway zones, and halt sequences.
 - **Passenger Booking Manifests**:
   - Master reservation registry showing all system PNRs, traveler routes, fares, and active statuses.
+  - **Booking Details Inspection**: Click any booking row in the table (or select a row and click **VIEW BOOKING DETAILS**) to open the official Electronic Reservation Slip (`ETicketPassDialog`). Inspect traveler names, age/gender, assigned coach and berth numbers, timetable stepper, QR barcode, and fare breakdown receipt.
+  - **Administrative Cancellation**: Station Masters can process ticket cancellations directly from the reservation slip; doing so automatically replenishes seat quotas and reactively updates dashboard analytics and manifests.
+  - **Export Manifest (CSV)**: Export the complete manifest registry to an RFC 4180-compliant CSV spreadsheet.
 - **System Telemetry & Health**:
   - Live diagnostics displaying HikariCP connection pool status, MySQL engine state, Java runtime version, memory allocation, and OS metrics.
 

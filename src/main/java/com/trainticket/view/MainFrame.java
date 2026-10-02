@@ -17,9 +17,13 @@ import com.trainticket.controller.TrainSearchController;
 import com.trainticket.model.AuthSession;
 import com.trainticket.model.TrainSearchQuery;
 import com.trainticket.model.TrainSearchResult;
+import com.trainticket.model.FeaturedDestination;
 import com.trainticket.view.dialog.AuthDialog;
+import com.trainticket.view.dialog.PlanDestinationTripDialog;
+import com.trainticket.view.dialog.PnrStatusDialog;
 import com.trainticket.view.admin.AdminDashboardView;
 import com.trainticket.view.pages.TrainsPageView;
+import com.trainticket.view.pages.TrainSearchResultsView;
 import com.trainticket.view.pages.MyBookingsPageView;
 import com.trainticket.view.component.navigation.AppHeaderPanel;
 import com.trainticket.view.pages.PlanMyTripView;
@@ -38,6 +42,7 @@ public class MainFrame extends JFrame {
     private JPanel rootCardPanel;
     private JPanel contentContainer;
     private HomeView homeView;
+    private TrainSearchResultsView routeSearchResultsView;
     private TrainsPageView trainsPageView;
     private MyBookingsPageView myBookingsPageView;
     private AdminDashboardView adminDashboardView;
@@ -189,35 +194,34 @@ public class MainFrame extends JFrame {
         // scrim
         uiOverlayPanel = new JPanel(new BorderLayout()) {
             private static final long serialVersionUID = 1L;
+            private static final int GRADIENT_HEIGHT = 240;
+            private final float[] fractions = { 0.0f, 0.35f, 0.70f, 1.0f };
+            private final Color[] colors = {
+                    new Color(0, 0, 0, 95),
+                    new Color(0, 0, 0, 50),
+                    new Color(0, 0, 0, 15),
+                    new Color(0, 0, 0, 0)
+            };
+            private final LinearGradientPaint scrimGradient = new LinearGradientPaint(0, 0, 0, GRADIENT_HEIGHT, fractions, colors);
+
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (isHomeViewActive) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     int w = getWidth();
-                    int gradientHeight = 240; // Extended smooth falloff height
-
-                    // Ultra-smooth subtle dark ambient scrim fading gently into the video
-                    float[] fractions = { 0.0f, 0.35f, 0.70f, 1.0f };
-                    Color[] colors = {
-                            new Color(0, 0, 0, 95), // Soft, subtle starting black (~37% opacity)
-                            new Color(0, 0, 0, 50), // Smooth feathering
-                            new Color(0, 0, 0, 15), // Delicate ambient falloff
-                            new Color(0, 0, 0, 0) // Fully dissipated at 240px
-                    };
-                    LinearGradientPaint gradient = new LinearGradientPaint(0, 0, 0, gradientHeight, fractions, colors);
-                    g2.setPaint(gradient);
-                    g2.fillRect(0, 0, w, gradientHeight);
+                    g2.setPaint(scrimGradient);
+                    g2.fillRect(0, 0, w, GRADIENT_HEIGHT);
                     g2.dispose();
                 } else {
-                    g.setColor(new Color(248, 250, 252));
+                    g.setColor(new Color(238, 242, 246));
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }
             }
         };
         uiOverlayPanel.setOpaque(false);
 
-        // Top Minimalist Header (3 Tabs: Book Journey, Trains, My Bookings)
+        // Top Minimalist Header (Tabs: Book Journey, Trains, My Bookings)
         headerPanel = new AppHeaderPanel(
                 this::showHomeView,
                 this::showTrainsView,
@@ -234,7 +238,11 @@ public class MainFrame extends JFrame {
 
         homeView = new HomeView();
         wireSearchEvents(homeView);
+        if (homeView.getDestinationsSection() != null) {
+            homeView.getDestinationsSection().setDestinationSelectListener(this::openDestinationTripDialog);
+        }
 
+        routeSearchResultsView = new TrainSearchResultsView(null, List.of(), this::showHomeView, this::handleTrainSearch);
         trainsPageView = new TrainsPageView(trainSearchController);
         myBookingsPageView = new MyBookingsPageView(this::openAuthDialog, this::showTrainsView);
 
@@ -252,10 +260,38 @@ public class MainFrame extends JFrame {
         rootCardPanel.add(adminDashboardView, "ADMIN");
 
         // Dedicated Full-Page Plan My Trip view (own header, no video)
-        planMyTripView = new PlanMyTripView(this::showHomeView);
+        planMyTripView = new PlanMyTripView(this::showHomeView, this::openDestinationTripDialog);
         rootCardPanel.add(planMyTripView, "PLAN_MY_TRIP");
 
+        // Dedicated Full-Page Route Search Results view (own custom header, no video)
+        rootCardPanel.add(routeSearchResultsView, "ROUTE_SEARCH");
+
         setContentPane(rootCardPanel);
+    }
+
+    public void openDestinationTripDialog(FeaturedDestination destination) {
+        if (destination == null) return;
+        PlanDestinationTripDialog dialog = new PlanDestinationTripDialog(this, destination, this::handleTrainSearch);
+        dialog.setVisible(true);
+    }
+
+    public void openPnrStatusDialog() {
+        openPnrStatusDialog(null);
+    }
+
+    public void openPnrStatusDialog(String initialPnr) {
+        PnrStatusDialog dialog = new PnrStatusDialog(this, initialPnr);
+        dialog.setVisible(true);
+    }
+
+    public void openLiveTrackerDialog() {
+        openLiveTrackerDialog(null);
+    }
+
+    public void openLiveTrackerDialog(String initialTrainNumber) {
+        com.trainticket.view.dialog.LiveTrainTrackerDialog dialog = 
+                new com.trainticket.view.dialog.LiveTrainTrackerDialog(this, initialTrainNumber);
+        dialog.setVisible(true);
     }
 
     public void openAuthDialog() {
@@ -293,10 +329,25 @@ public class MainFrame extends JFrame {
 
     private void showSearchResults(TrainSearchQuery query, List<TrainSearchResult> results) {
         SwingUtilities.invokeLater(() -> {
-            if (trainsPageView != null) {
-                trainsPageView.setSearchQueryAndResults(query, results);
+            if (routeSearchResultsView != null) {
+                routeSearchResultsView.setSearchQueryAndResults(query, results);
             }
-            showTrainsView();
+            showRouteSearchResults();
+        });
+    }
+
+    public void showRouteSearchResults() {
+        SwingUtilities.invokeLater(() -> {
+            isHomeViewActive = false;
+            if (videoBackgroundPanel != null) {
+                videoBackgroundPanel.pauseVideo();
+                videoBackgroundPanel.setVisible(false);
+            }
+            AudioManager.pause();
+            CardLayout rootCl = (CardLayout) rootCardPanel.getLayout();
+            rootCl.show(rootCardPanel, "ROUTE_SEARCH");
+            rootCardPanel.revalidate();
+            rootCardPanel.repaint();
         });
     }
 
@@ -328,6 +379,9 @@ public class MainFrame extends JFrame {
 
     public void showTrainsView() {
         SwingUtilities.invokeLater(() -> {
+            CardLayout rootCl = (CardLayout) rootCardPanel.getLayout();
+            rootCl.show(rootCardPanel, "PASSENGER");
+
             setActiveTab(1);
             isHomeViewActive = false;
             CardLayout cl = (CardLayout) contentContainer.getLayout();
@@ -339,9 +393,11 @@ public class MainFrame extends JFrame {
             }
             if (uiOverlayPanel != null) {
                 uiOverlayPanel.setOpaque(true);
-                uiOverlayPanel.setBackground(new Color(248, 250, 252));
+                uiOverlayPanel.setBackground(new Color(238, 242, 246));
                 uiOverlayPanel.repaint();
             }
+            rootCardPanel.revalidate();
+            rootCardPanel.repaint();
         });
     }
 
@@ -361,7 +417,7 @@ public class MainFrame extends JFrame {
             }
             if (uiOverlayPanel != null) {
                 uiOverlayPanel.setOpaque(true);
-                uiOverlayPanel.setBackground(new Color(248, 250, 252));
+                uiOverlayPanel.setBackground(new Color(238, 242, 246));
                 uiOverlayPanel.repaint();
             }
         });

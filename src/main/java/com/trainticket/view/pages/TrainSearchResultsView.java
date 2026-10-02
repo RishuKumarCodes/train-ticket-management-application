@@ -5,11 +5,13 @@ import com.trainticket.model.CoachAvailability;
 import com.trainticket.model.TrainSearchQuery;
 import com.trainticket.model.TrainSearchResult;
 import com.trainticket.util.AssetManager;
+import com.trainticket.view.component.search.IrctcSearchHeaderBar;
 import com.trainticket.view.component.train.TrainResultCard;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -18,6 +20,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicScrollBarUI;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -31,35 +34,54 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * Universal Light Theme search results page for RailFlow.
- * Displays available trains matching the multi-criteria search with real-time
- * seating availability, dynamic pricing, live route tracking, and booking
- * triggers.
- * Strictly adheres to 50px borderless cards, Bebas Neue headings, and full
- * rounded pill buttons.
+ * Dedicated Route Search Results full-page view for RailFlow.
+ * <p>
+ * Features its own dedicated page header (matching PlanMyTripView) with zero
+ * background
+ * and zero border:
+ * <ul>
+ * <li>Brand Orange circular/pill back-arrow button (left) to return to Home
+ * screen.</li>
+ * <li>Monumental Bebas Neue title "AVAILABLE TRAINS" (center).</li>
+ * <li>Route location pill badge (right).</li>
+ * </ul>
+ * Directly beneath the header, it provides an interactive SearchCapsulePanel
+ * with station
+ * swapping (⇄), query summary chips, sorting filters, and live train result
+ * cards on the clean
+ * #F8FAFC light canvas.
  */
 public class TrainSearchResultsView extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private final TrainSearchQuery searchQuery;
-    private final List<TrainSearchResult> allResults;
-    private final Runnable onBackAction;
+    // Top inset to clear macOS transparent title bar traffic lights (and Windows
+    // caption bar).
+    private static final int TITLE_BAR_INSET = 36;
 
-    private List<TrainSearchResult> displayedResults;
+    private TrainSearchQuery searchQuery;
+    private final List<TrainSearchResult> allResults = new ArrayList<>();
+    private final Runnable onBackAction;
+    private final Consumer<TrainSearchQuery> onRequery;
+
+    private List<TrainSearchResult> displayedResults = new ArrayList<>();
+    private IrctcSearchHeaderBar irctcSearchHeader;
     private JPanel resultsListPanel;
     private SortCriteria activeSort = SortCriteria.DEPARTURE_EARLIEST;
 
-    private JButton sortDepBtn;
-    private JButton sortDurBtn;
-    private JButton sortArrBtn;
-    private JButton sortSeatsBtn;
+    private LocalDate activeDate;
+    private LocalDate currentWindowStartDate;
+    private JPanel dateStripContainer;
+    private JComboBox<String> sortDropdown;
+    private boolean isUpdatingSortDropdown = false;
 
     public enum SortCriteria {
         DEPARTURE_EARLIEST,
@@ -71,50 +93,91 @@ public class TrainSearchResultsView extends JPanel {
     public TrainSearchResultsView(TrainSearchQuery searchQuery,
             List<TrainSearchResult> results,
             Runnable onBackAction) {
+        this(searchQuery, results, onBackAction, null);
+    }
+
+    public TrainSearchResultsView(TrainSearchQuery searchQuery,
+            List<TrainSearchResult> results,
+            Runnable onBackAction,
+            Consumer<TrainSearchQuery> onRequery) {
         this.searchQuery = searchQuery;
-        this.allResults = results != null ? new ArrayList<>(results) : new ArrayList<>();
+        if (searchQuery != null) {
+            this.activeDate = searchQuery.getJourneyDate();
+        }
+        if (results != null) {
+            this.allResults.addAll(results);
+        }
         this.displayedResults = new ArrayList<>(this.allResults);
         this.onBackAction = onBackAction;
+        this.onRequery = onRequery;
 
         setLayout(new BorderLayout());
-        setOpaque(false);
+        setOpaque(true);
+        setBackground(new Color(238, 242, 246));
 
         initComponents();
         applySorting(SortCriteria.DEPARTURE_EARLIEST);
     }
 
     private void initComponents() {
+        // 1. Dedicated IRCTC single-row search header bar
+        add(buildPageHeader(), BorderLayout.NORTH);
+
+        // 2. Scrollable body with date navigator, sorting dropdown, and live train
+        // result cards
+        add(buildScrollableBody(), BorderLayout.CENTER);
+    }
+
+    private JPanel buildPageHeader() {
+        int headerHeight = TITLE_BAR_INSET + 66;
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        header.setPreferredSize(new Dimension(0, headerHeight));
+        header.setBorder(new EmptyBorder(TITLE_BAR_INSET, 16, 6, 16));
+
+        irctcSearchHeader = new IrctcSearchHeaderBar();
+        if (searchQuery != null) {
+            irctcSearchHeader.setSearchParameters(searchQuery);
+        }
+        irctcSearchHeader.addBackListener(() -> {
+            if (onBackAction != null)
+                onBackAction.run();
+        });
+        irctcSearchHeader.addSearchListener(this::handleInPageSearch);
+
+        header.add(irctcSearchHeader, BorderLayout.CENTER);
+        return header;
+    }
+
+    private JScrollPane buildScrollableBody() {
         JPanel contentContainer = new JPanel();
         contentContainer.setLayout(new BoxLayout(contentContainer, BoxLayout.Y_AXIS));
-        contentContainer.setOpaque(false);
-        contentContainer.setBorder(new EmptyBorder(28, 48, 48, 48));
+        contentContainer.setOpaque(true);
+        contentContainer.setBackground(new Color(238, 242, 246));
+        contentContainer.setBorder(new EmptyBorder(12, 48, 48, 48));
 
-        // 1. Navigation & Top Headline Header
-        JPanel headerPanel = createHeaderPanel();
-        contentContainer.add(headerPanel);
-        contentContainer.add(Box.createVerticalStrut(20));
+        // 1. Date Navigation & Sorting Dropdown Bar
+        JPanel sortBarWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        sortBarWrapper.setOpaque(false);
+        sortBarWrapper.add(createDateAndSortRow());
+        contentContainer.add(sortBarWrapper);
+        contentContainer.add(Box.createVerticalStrut(12));
 
-        // 2. Query Meta Summary Chips Bar
-        JPanel chipsBar = createChipsBar();
-        contentContainer.add(chipsBar);
-        contentContainer.add(Box.createVerticalStrut(20));
-
-        // 3. Sorting Filters Bar
-        JPanel sortBar = createSortBar();
-        contentContainer.add(sortBar);
-        contentContainer.add(Box.createVerticalStrut(24));
-
-        // 4. Results List Container
+        // 2. Results List Container (strictly capped to 1040px center grid)
         resultsListPanel = new JPanel();
         resultsListPanel.setLayout(new BoxLayout(resultsListPanel, BoxLayout.Y_AXIS));
         resultsListPanel.setOpaque(false);
-
+        resultsListPanel.setMaximumSize(new Dimension(1040, Integer.MAX_VALUE));
+        resultsListPanel.setAlignmentX(0.5f);
         contentContainer.add(resultsListPanel);
 
-        // ScrollPane with sleek custom scrollbar
+        // Smooth modern scrollpane
         JScrollPane scrollPane = new JScrollPane(contentContainer);
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setOpaque(true);
+        scrollPane.setBackground(new Color(238, 242, 246));
+        scrollPane.getViewport().setOpaque(true);
+        scrollPane.getViewport().setBackground(new Color(238, 242, 246));
         scrollPane.setBorder(null);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -156,103 +219,163 @@ public class TrainSearchResultsView extends JPanel {
             }
         });
 
-        add(scrollPane, BorderLayout.CENTER);
+        return scrollPane;
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel panel = new JPanel(new BorderLayout(24, 0));
-        panel.setOpaque(false);
-        panel.setMaximumSize(new Dimension(1200, 56));
-
-        // Left: Full Rounded Pill "Back to Home" Button
-        JButton backBtn = createPillButton("← BACK TO SEARCH", Color.WHITE, new Color(15, 23, 42), onBackAction);
-        backBtn.setPreferredSize(new Dimension(170, 42));
-        panel.add(backBtn, BorderLayout.WEST);
-
-        // Center: Monumental Bebas Neue Headline (Strictly uncluttered, no icons, no
-        // descriptions)
-        JLabel titleLabel = new JLabel("AVAILABLE TRAINS", SwingConstants.CENTER);
-        titleLabel.setFont(AssetManager.getFont("Bebas Neue", Font.BOLD, 38f));
-        titleLabel.setForeground(new Color(15, 23, 42)); // Deep Slate #0F172A
-        panel.add(titleLabel, BorderLayout.CENTER);
-
-        // Right placeholder spacer to center title
-        JPanel spacer = new JPanel();
-        spacer.setOpaque(false);
-        spacer.setPreferredSize(new Dimension(170, 42));
-        panel.add(spacer, BorderLayout.EAST);
-
-        return panel;
-    }
-
-    private JPanel createChipsBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
-        bar.setOpaque(false);
-        bar.setMaximumSize(new Dimension(1200, 44));
-
-        String fromCode = searchQuery != null && !searchQuery.getFromStationCode().isBlank()
-                ? searchQuery.getFromStationCode()
-                : "ORIGIN";
-        String toCode = searchQuery != null && !searchQuery.getToStationCode().isBlank()
-                ? searchQuery.getToStationCode()
-                : "DESTINATION";
-
-        // Route Chip
-        bar.add(createBadgePill(fromCode + "  ➔  " + toCode, new Color(239, 246, 255), new Color(29, 78, 216)));
-
-        // Date Chip
-        String dateStr = searchQuery != null && searchQuery.getJourneyDate() != null
-                ? searchQuery.getJourneyDate().format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy")).toUpperCase()
-                : "UPCOMING";
-        bar.add(createBadgePill(dateStr, new Color(241, 245, 249), new Color(51, 65, 85)));
-
-        // Quota Chip
-        String quotaStr = searchQuery != null && searchQuery.getQuota() != null
-                ? searchQuery.getQuota().name().replace('_', ' ') + " QUOTA"
-                : "GENERAL QUOTA";
-        bar.add(createBadgePill(quotaStr, new Color(255, 247, 237), new Color(194, 65, 12)));
-
-        // Concession Chip
-        if (searchQuery != null && searchQuery.getConcession() != null
-                && searchQuery.getConcession() != com.trainticket.model.ConcessionType.NONE) {
-            String concStr = searchQuery.getConcession().name().replace('_', ' ') + " CONCESSION";
-            bar.add(createBadgePill(concStr, new Color(236, 253, 245), new Color(4, 120, 87)));
+    public void setSearchQueryAndResults(TrainSearchQuery query, List<TrainSearchResult> results) {
+        this.searchQuery = query;
+        if (query != null) {
+            this.activeDate = query.getJourneyDate();
         }
-
-        // Count Chip
-        String countStr = displayedResults.size() + " TRAINS SCHEDULED";
-        bar.add(createBadgePill(countStr, new Color(255, 247, 237), new Color(250, 89, 9)));
-
-        return bar;
+        this.allResults.clear();
+        if (results != null) {
+            this.allResults.addAll(results);
+        }
+        this.displayedResults = new ArrayList<>(this.allResults);
+        if (irctcSearchHeader != null && query != null) {
+            irctcSearchHeader.setSearchParameters(query);
+        }
+        rebuildDateStrip();
+        applySorting(activeSort);
     }
 
-    private JPanel createSortBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        bar.setOpaque(false);
-        bar.setMaximumSize(new Dimension(1200, 42));
+    private void handleInPageSearch(TrainSearchQuery query) {
+        if (onRequery != null) {
+            onRequery.accept(query);
+        }
+    }
 
-        JLabel sortLabel = new JLabel("SORT EXPEDITIONS BY:");
+    private JPanel createDateAndSortRow() {
+        JPanel bar = new JPanel(new BorderLayout(16, 0));
+        bar.setOpaque(false);
+        bar.setPreferredSize(new Dimension(1040, 36));
+        bar.setMaximumSize(new Dimension(1040, 36));
+
+        // Left: Date Strip for easy date navigation
+        dateStripContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        dateStripContainer.setOpaque(false);
+        rebuildDateStrip();
+        bar.add(dateStripContainer, BorderLayout.WEST);
+
+        // Right: Sort Dropdown
+        JPanel sortWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        sortWrapper.setOpaque(false);
+
+        JLabel sortLabel = new JLabel("SORT BY:");
         sortLabel.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
         sortLabel.setForeground(new Color(100, 116, 139));
-        bar.add(sortLabel);
-        bar.add(Box.createHorizontalStrut(6));
+        sortWrapper.add(sortLabel);
 
-        sortDepBtn = createSortFilterPill("DEPARTURE (EARLIEST)", () -> applySorting(SortCriteria.DEPARTURE_EARLIEST));
-        sortDurBtn = createSortFilterPill("DURATION (FASTEST)", () -> applySorting(SortCriteria.DURATION_FASTEST));
-        sortArrBtn = createSortFilterPill("ARRIVAL (EARLIEST)", () -> applySorting(SortCriteria.ARRIVAL_EARLIEST));
-        sortSeatsBtn = createSortFilterPill("SEATS AVAILABLE", () -> applySorting(SortCriteria.SEATS_AVAILABLE));
+        String[] sortOptions = {
+                "Departure: Earliest",
+                "Duration: Fastest",
+                "Arrival: Earliest",
+                "Seats: Most Available"
+        };
+        sortDropdown = new JComboBox<>(sortOptions);
+        sortDropdown.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
+        sortDropdown.setPreferredSize(new Dimension(185, 34));
+        sortDropdown.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        sortDropdown.putClientProperty(FlatClientProperties.STYLE,
+                "arc: 999; " +
+                        "background: #FFFFFF; " +
+                        "foreground: #0F172A; " +
+                        "borderColor: #E2E8F0; " +
+                        "focusedBorderColor: #FA5909; " +
+                        "padding: 3,12,3,12;");
 
-        bar.add(sortDepBtn);
-        bar.add(sortDurBtn);
-        bar.add(sortArrBtn);
-        bar.add(sortSeatsBtn);
+        sortDropdown.addActionListener(e -> {
+            if (isUpdatingSortDropdown)
+                return;
+            int idx = sortDropdown.getSelectedIndex();
+            switch (idx) {
+                case 0 -> applySorting(SortCriteria.DEPARTURE_EARLIEST);
+                case 1 -> applySorting(SortCriteria.DURATION_FASTEST);
+                case 2 -> applySorting(SortCriteria.ARRIVAL_EARLIEST);
+                case 3 -> applySorting(SortCriteria.SEATS_AVAILABLE);
+            }
+        });
+        sortWrapper.add(sortDropdown);
+        bar.add(sortWrapper, BorderLayout.EAST);
 
         return bar;
+    }
+
+    private void rebuildDateStrip() {
+        if (dateStripContainer == null)
+            return;
+        dateStripContainer.removeAll();
+
+        if (activeDate == null) {
+            activeDate = searchQuery != null ? searchQuery.getJourneyDate() : LocalDate.now();
+        }
+
+        if (currentWindowStartDate == null ||
+                activeDate.isBefore(currentWindowStartDate) ||
+                activeDate.isAfter(currentWindowStartDate.plusDays(5))) {
+            currentWindowStartDate = activeDate.minusDays(1);
+            if (currentWindowStartDate.isBefore(LocalDate.now())) {
+                currentWindowStartDate = LocalDate.now();
+            }
+        }
+
+        // Prev arrow button (‹)
+        boolean canGoPrev = currentWindowStartDate.isAfter(LocalDate.now());
+        JButton prevBtn = createNavArrowButton("‹", canGoPrev, () -> {
+            if (currentWindowStartDate.isAfter(LocalDate.now())) {
+                currentWindowStartDate = currentWindowStartDate.minusDays(1);
+                if (currentWindowStartDate.isBefore(LocalDate.now())) {
+                    currentWindowStartDate = LocalDate.now();
+                }
+                rebuildDateStrip();
+            }
+        });
+        dateStripContainer.add(prevBtn);
+
+        // Date pills (6 consecutive days: e.g. 4 Jun, 5 Jun, 6 Jun...)
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("d MMM");
+        for (int i = 0; i < 6; i++) {
+            final LocalDate date = currentWindowStartDate.plusDays(i);
+            boolean isActive = date.equals(activeDate);
+            String label = date.format(dtf);
+
+            JButton dateBtn = createDatePillButton(label, isActive, () -> {
+                if (date.equals(activeDate))
+                    return;
+                activeDate = date;
+                rebuildDateStrip();
+
+                TrainSearchQuery newQuery;
+                if (searchQuery != null) {
+                    newQuery = new TrainSearchQuery(
+                            searchQuery.getFromStationCode(),
+                            searchQuery.getToStationCode(),
+                            date,
+                            searchQuery.getQuota(),
+                            searchQuery.getConcession(),
+                            searchQuery.getPreferredClass());
+                } else {
+                    newQuery = new TrainSearchQuery("NDLS", "MMCT", date, null, null, "All Classes");
+                }
+                handleInPageSearch(newQuery);
+            });
+            dateStripContainer.add(dateBtn);
+        }
+
+        // Next arrow button (›)
+        JButton nextBtn = createNavArrowButton("›", true, () -> {
+            currentWindowStartDate = currentWindowStartDate.plusDays(1);
+            rebuildDateStrip();
+        });
+        dateStripContainer.add(nextBtn);
+
+        dateStripContainer.revalidate();
+        dateStripContainer.repaint();
     }
 
     private void applySorting(SortCriteria criteria) {
         this.activeSort = criteria;
-        updateSortButtonStyles();
+        updateSortDropdownSelection();
 
         if (displayedResults != null && !displayedResults.isEmpty()) {
             switch (criteria) {
@@ -260,7 +383,8 @@ public class TrainSearchResultsView extends JPanel {
                     displayedResults.sort(Comparator.comparing(TrainSearchResult::getDepartureTime));
                 case DURATION_FASTEST ->
                     displayedResults.sort(Comparator.comparing(TrainSearchResult::calculateDuration));
-                case ARRIVAL_EARLIEST -> displayedResults.sort(Comparator.comparing(TrainSearchResult::getArrivalTime));
+                case ARRIVAL_EARLIEST ->
+                    displayedResults.sort(Comparator.comparing(TrainSearchResult::getArrivalTime));
                 case SEATS_AVAILABLE -> displayedResults.sort((a, b) -> {
                     int seatsA = a.getCoachAvailabilities().stream().mapToInt(CoachAvailability::getAvailableSeats)
                             .sum();
@@ -270,28 +394,23 @@ public class TrainSearchResultsView extends JPanel {
                 });
             }
         }
-
         renderResults();
     }
 
-    private void updateSortButtonStyles() {
-        styleSortPill(sortDepBtn, activeSort == SortCriteria.DEPARTURE_EARLIEST);
-        styleSortPill(sortDurBtn, activeSort == SortCriteria.DURATION_FASTEST);
-        styleSortPill(sortArrBtn, activeSort == SortCriteria.ARRIVAL_EARLIEST);
-        styleSortPill(sortSeatsBtn, activeSort == SortCriteria.SEATS_AVAILABLE);
-    }
-
-    private void styleSortPill(JButton btn, boolean isActive) {
-        if (btn == null)
+    private void updateSortDropdownSelection() {
+        if (sortDropdown == null)
             return;
-        if (isActive) {
-            btn.setBackground(new Color(15, 23, 42)); // Deep Slate #0F172A
-            btn.setForeground(Color.WHITE);
-        } else {
-            btn.setBackground(Color.WHITE);
-            btn.setForeground(new Color(71, 85, 105));
+        isUpdatingSortDropdown = true;
+        int targetIdx = switch (activeSort) {
+            case DEPARTURE_EARLIEST -> 0;
+            case DURATION_FASTEST -> 1;
+            case ARRIVAL_EARLIEST -> 2;
+            case SEATS_AVAILABLE -> 3;
+        };
+        if (sortDropdown.getSelectedIndex() != targetIdx) {
+            sortDropdown.setSelectedIndex(targetIdx);
         }
-        btn.repaint();
+        isUpdatingSortDropdown = false;
     }
 
     private void renderResults() {
@@ -300,9 +419,12 @@ public class TrainSearchResultsView extends JPanel {
         if (displayedResults.isEmpty()) {
             resultsListPanel.add(createEmptyStateCard());
         } else {
+            boolean autoExpand = displayedResults.size() == 1;
             for (TrainSearchResult result : displayedResults) {
-                resultsListPanel.add(new TrainResultCard(result, searchQuery));
-                resultsListPanel.add(Box.createVerticalStrut(24));
+                TrainResultCard card = new TrainResultCard(result, searchQuery, autoExpand, autoExpand);
+                card.setAlignmentX(0.5f);
+                resultsListPanel.add(card);
+                resultsListPanel.add(Box.createVerticalStrut(10)); // Just little gap between cards
             }
         }
 
@@ -312,50 +434,51 @@ public class TrainSearchResultsView extends JPanel {
 
     private JPanel createEmptyStateCard() {
         JPanel card = new JPanel() {
+            private static final long serialVersionUID = 1L;
+
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
+                int arc = 36;
 
-                // Multi-tiered ambient shadow without borders
-                g2.setColor(new Color(0, 0, 0, 12));
-                g2.fillRoundRect(8, 8, w - 16, h - 16, 100, 100);
-                g2.setColor(new Color(0, 0, 0, 8));
-                g2.fillRoundRect(4, 4, w - 8, h - 8, 100, 100);
+                g2.setColor(new Color(0, 0, 0, 6));
+                g2.fillRoundRect(3, 4, w - 6, h - 5, arc, arc);
+                g2.setColor(new Color(0, 0, 0, 10));
+                g2.fillRoundRect(2, 2, w - 4, h - 4, arc, arc);
 
-                // Pure White Sheet (Strictly 0px border)
                 g2.setColor(Color.WHITE);
-                g2.fillRoundRect(8, 8, w - 16, h - 16, 100, 100);
+                g2.fillRoundRect(1, 1, w - 2, h - 2, arc, arc);
                 g2.dispose();
             }
         };
         card.setOpaque(false);
-        card.setMaximumSize(new Dimension(1120, 280));
-        card.setPreferredSize(new Dimension(1120, 280));
+        card.setMaximumSize(new Dimension(1040, 260));
+        card.setPreferredSize(new Dimension(1040, 260));
+        card.setAlignmentX(0.5f);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(new EmptyBorder(48, 48, 48, 48));
+        card.setBorder(new EmptyBorder(40, 48, 40, 48));
 
-        JLabel title = new JLabel("NO SCHEDULED TRAINS FOUND FOR THIS ROUTE", SwingConstants.CENTER);
+        JLabel title = new JLabel("NO DIRECT TRAINS FOUND FOR THIS ROUTE", SwingConstants.CENTER);
         title.setFont(AssetManager.getFont("Bebas Neue", Font.BOLD, 30f));
         title.setForeground(new Color(15, 23, 42));
         title.setAlignmentX(0.5f);
         card.add(title);
-        card.add(Box.createVerticalStrut(14));
+        card.add(Box.createVerticalStrut(12));
 
         JLabel desc = new JLabel(
-                "We could not locate direct passenger runs between the specified stations on this date.",
+                "<html><center>We could not find direct trains between these stations on the selected date.<br>Try modifying stations, swapping the route direction (\u21C4), or choosing an alternate date.</center></html>",
                 SwingConstants.CENTER);
-        desc.setFont(AssetManager.getFont("Roboto", Font.BOLD, 14f));
+        desc.setFont(AssetManager.getFont("Roboto", Font.PLAIN, 14f));
         desc.setForeground(new Color(100, 116, 139));
         desc.setAlignmentX(0.5f);
         card.add(desc);
-        card.add(Box.createVerticalStrut(28));
+        card.add(Box.createVerticalStrut(24));
 
-        JButton modifyBtn = createPillButton("MODIFY SEARCH PARAMETERS", new Color(250, 89, 9), Color.WHITE,
-                onBackAction);
-        modifyBtn.setPreferredSize(new Dimension(240, 46));
+        JButton modifyBtn = createPillButton("RETURN TO HOME SEARCH", new Color(250, 89, 9), Color.WHITE, onBackAction);
+        modifyBtn.setPreferredSize(new Dimension(240, 44));
         modifyBtn.setAlignmentX(0.5f);
         card.add(modifyBtn);
 
@@ -364,6 +487,8 @@ public class TrainSearchResultsView extends JPanel {
 
     private static JLabel createBadgePill(String text, Color bg, Color fg) {
         JLabel label = new JLabel(text) {
+            private static final long serialVersionUID = 1L;
+
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -381,8 +506,27 @@ public class TrainSearchResultsView extends JPanel {
         return label;
     }
 
-    private static JButton createSortFilterPill(String text, Runnable onClick) {
+    private static JButton createDatePillButton(String text, boolean isActive, Runnable onClick) {
         JButton btn = new JButton(text) {
+            private static final long serialVersionUID = 1L;
+            private boolean isHovered = false;
+
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        isHovered = true;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        isHovered = false;
+                        repaint();
+                    }
+                });
+            }
+
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -392,11 +536,24 @@ public class TrainSearchResultsView extends JPanel {
                 int w = getWidth();
                 int h = getHeight();
 
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, w, h, h, h);
+                if (isActive) {
+                    // Active Date: Deep Obsidian Black with Crisp White Text
+                    g2.setColor(new Color(15, 23, 42)); // #0F172A
+                    g2.fillRoundRect(0, 0, w, h, h, h);
+                    g2.setColor(Color.WHITE);
+                } else {
+                    // Inactive Date: Pure White with slate border and subtle hover highlight
+                    g2.setColor(isHovered ? new Color(241, 245, 249) : Color.WHITE);
+                    g2.fillRoundRect(0, 0, w, h, h, h);
+
+                    g2.setColor(isHovered ? new Color(203, 213, 225) : new Color(226, 232, 240));
+                    g2.setStroke(new BasicStroke(1.0f));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, h, h);
+
+                    g2.setColor(new Color(51, 65, 85)); // Slate #334155
+                }
 
                 g2.setFont(getFont());
-                g2.setColor(getForeground());
                 FontMetrics fm = g2.getFontMetrics();
                 int tx = (w - fm.stringWidth(getText())) / 2;
                 int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
@@ -405,8 +562,9 @@ public class TrainSearchResultsView extends JPanel {
                 g2.dispose();
             }
         };
-        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
-        btn.setPreferredSize(new Dimension(170, 34));
+
+        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
+        btn.setPreferredSize(new Dimension(78, 34));
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
@@ -418,8 +576,71 @@ public class TrainSearchResultsView extends JPanel {
         return btn;
     }
 
+    private static JButton createNavArrowButton(String symbol, boolean enabled, Runnable onClick) {
+        JButton btn = new JButton(symbol) {
+            private static final long serialVersionUID = 1L;
+            private boolean isHovered = false;
+
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        isHovered = true;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        isHovered = false;
+                        repaint();
+                    }
+                });
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                g2.setColor(enabled && isHovered ? new Color(241, 245, 249) : Color.WHITE);
+                g2.fillRoundRect(0, 0, w, h, h, h);
+
+                g2.setColor(new Color(226, 232, 240));
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, h, h);
+
+                g2.setColor(enabled ? new Color(15, 23, 42) : new Color(203, 213, 225));
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = (w - fm.stringWidth(getText())) / 2;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent() - 1;
+                g2.drawString(getText(), tx, ty);
+
+                g2.dispose();
+            }
+        };
+
+        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 14f));
+        btn.setPreferredSize(new Dimension(34, 34));
+        btn.setEnabled(enabled);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+        btn.addActionListener(e -> {
+            if (enabled && onClick != null)
+                onClick.run();
+        });
+        return btn;
+    }
+
     private static JButton createPillButton(String text, Color bg, Color fg, Runnable onClick) {
         JButton btn = new JButton(text) {
+            private static final long serialVersionUID = 1L;
             private boolean isHovered = false;
             private boolean isPressed = false;
 
@@ -466,7 +687,7 @@ public class TrainSearchResultsView extends JPanel {
                 }
 
                 Color fill = bg;
-                if (bg.equals(new Color(250, 89, 9))) { // Brand Orange
+                if (bg.equals(new Color(250, 89, 9))) {
                     fill = isPressed ? new Color(201, 63, 0) : (isHovered ? new Color(224, 77, 5) : bg);
                 } else if (bg.equals(Color.WHITE)) {
                     fill = isPressed ? new Color(226, 232, 240) : (isHovered ? new Color(241, 245, 249) : bg);

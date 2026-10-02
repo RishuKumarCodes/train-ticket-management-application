@@ -59,6 +59,14 @@ public class ModernDatePicker extends JPanel {
         setFocusable(true);
         setPreferredSize(new Dimension(96, 24));
 
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0) {
+                if (!isShowing()) {
+                    closePopup();
+                }
+            }
+        });
+
         initInteractions();
     }
 
@@ -229,6 +237,7 @@ public class ModernDatePicker extends JPanel {
 
         if (popupWindow == null) {
             popupWindow = new JWindow(owner);
+            popupWindow.setType(Window.Type.POPUP);
             popupWindow.setBackground(new Color(0, 0, 0, 0));
             popupContent = new CalendarPopupCard();
             popupWindow.setContentPane(popupContent);
@@ -237,18 +246,17 @@ public class ModernDatePicker extends JPanel {
         popupContent.refreshCalendarView();
         popupWindow.setSize(popupWidth, popupHeight);
         popupWindow.setLocation(targetX, targetY);
+        popupWindow.setAlwaysOnTop(true);
+        popupWindow.toFront();
         popupContent.startEnterAnimation(targetY, openUpward);
         popupWindow.setVisible(true);
+        popupWindow.toFront();
 
         isPopupOpen = true;
         registerOutsideClickListener();
     }
 
     public void closePopup() {
-        if (!isPopupOpen) {
-            return;
-        }
-
         isPopupOpen = false;
         unregisterOutsideClickListener();
 
@@ -270,14 +278,25 @@ public class ModernDatePicker extends JPanel {
 
         outsideClickListener = event -> {
             if (event instanceof MouseEvent me && me.getID() == MouseEvent.MOUSE_PRESSED) {
-                if (!isPopupOpen || popupWindow == null || !popupWindow.isVisible()) {
+                if (popupWindow == null || !popupWindow.isVisible()) {
                     return;
                 }
                 Point clickPoint = me.getLocationOnScreen();
-                Rectangle triggerBounds = new Rectangle(getLocationOnScreen(), getSize());
-                Rectangle popupBounds = popupWindow.getBounds();
+                boolean insideTrigger = false;
+                try {
+                    if (isShowing()) {
+                        insideTrigger = new Rectangle(getLocationOnScreen(), getSize()).contains(clickPoint);
+                    }
+                } catch (Exception ignored) {}
 
-                if (!triggerBounds.contains(clickPoint) && !popupBounds.contains(clickPoint)) {
+                boolean insidePopup = false;
+                try {
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        insidePopup = popupWindow.getBounds().contains(clickPoint);
+                    }
+                } catch (Exception ignored) {}
+
+                if (!insideTrigger && !insidePopup) {
                     SwingUtilities.invokeLater(this::closePopup);
                 }
             }

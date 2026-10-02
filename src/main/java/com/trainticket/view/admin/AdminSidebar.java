@@ -5,7 +5,6 @@ import com.trainticket.model.AuthSession;
 import com.trainticket.model.User;
 import com.trainticket.util.AssetManager;
 
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -13,7 +12,6 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -21,13 +19,18 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Operational Left Sidebar for the Station Master Administrator Dashboard.
- * Houses monumental typography, view navigation pill toggles, and operator credential metadata.
+ * Floating Operational Left Sidebar for the Station Master Administrator Dashboard.
+ * Designed in Apple floating UI aesthetics with 28px rounded corners, multi-tier soft ambient
+ * drop shadow, concise navigation labels, 14pt typography, and vibrant pill-shaped active state.
  */
 public class AdminSidebar extends JPanel {
 
@@ -44,17 +47,16 @@ public class AdminSidebar extends JPanel {
         this.onExit = onExit;
 
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(250, 800));
-        setBackground(Color.WHITE);
-        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(226, 232, 240))); // #E2E8F0
+        setPreferredSize(new Dimension(236, 0));
+        setOpaque(false);
 
         // Top Monumental Branding (Bebas Neue, Zero clutter, No icons)
         JPanel brand = new JPanel(new BorderLayout(0, 4));
         brand.setOpaque(false);
-        brand.setBorder(new EmptyBorder(32, 24, 24, 24));
+        brand.setBorder(new EmptyBorder(24, 20, 16, 20));
 
         JLabel logoTag = new JLabel("STATION MASTER");
-        logoTag.setFont(AssetManager.getFont("Bebas Neue", Font.BOLD, 26f));
+        logoTag.setFont(AssetManager.getFont("Bebas Neue", Font.BOLD, 24f));
         logoTag.setForeground(new Color(15, 23, 42)); // #0F172A
         brand.add(logoTag, BorderLayout.CENTER);
 
@@ -64,17 +66,21 @@ public class AdminSidebar extends JPanel {
         JPanel navList = new JPanel();
         navList.setLayout(new BoxLayout(navList, BoxLayout.Y_AXIS));
         navList.setOpaque(false);
-        navList.setBorder(new EmptyBorder(8, 14, 12, 14));
+        navList.setBorder(new EmptyBorder(4, 14, 8, 14));
 
-        navList.add(createNavButton("Command Overview", "OVERVIEW", true));
+        navList.add(createNavButton("Overview", "OVERVIEW", true, navList));
         navList.add(Box.createVerticalStrut(6));
-        navList.add(createNavButton("Train Fleet Rosters", "FLEET", false));
+        navList.add(createNavButton("Fleet", "FLEET", false, navList));
         navList.add(Box.createVerticalStrut(6));
-        navList.add(createNavButton("Stations & Route Halts", "STATIONS", false));
+        navList.add(createNavButton("Stations", "STATIONS", false, navList));
         navList.add(Box.createVerticalStrut(6));
-        navList.add(createNavButton("Booking Manifests", "BOOKINGS", false));
+        navList.add(createNavButton("Bookings", "BOOKINGS", false, navList));
         navList.add(Box.createVerticalStrut(6));
-        navList.add(createNavButton("System Health & DB", "HEALTH", false));
+        navList.add(createNavButton("Destinations", "DESTINATIONS", false, navList));
+        navList.add(Box.createVerticalStrut(6));
+        navList.add(createNavButton("Health", "HEALTH", false, navList));
+        navList.add(Box.createVerticalStrut(6));
+        navList.add(createNavButton("Users", "USERS", false, navList));
 
         add(navList, BorderLayout.CENTER);
 
@@ -82,20 +88,20 @@ public class AdminSidebar extends JPanel {
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
         bottomPanel.setOpaque(false);
-        bottomPanel.setBorder(new EmptyBorder(16, 16, 24, 16));
+        bottomPanel.setBorder(new EmptyBorder(12, 16, 20, 16));
 
         operatorLabel = new JLabel();
         operatorLabel.setFont(AssetManager.getFont("Roboto", Font.BOLD, 11f));
-        operatorLabel.setForeground(new Color(15, 23, 42)); // #0F172A
+        operatorLabel.setForeground(new Color(100, 116, 139)); // #64748B
         operatorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         updateOperatorName();
         bottomPanel.add(operatorLabel);
 
         bottomPanel.add(Box.createVerticalStrut(10));
 
-        JButton exitBtn = new JButton("← Exit to Passenger View");
-        exitBtn.setMaximumSize(new Dimension(218, 38));
-        exitBtn.setPreferredSize(new Dimension(218, 38));
+        JButton exitBtn = new JButton("← Sign Out & Return");
+        exitBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        exitBtn.setPreferredSize(new Dimension(200, 38));
         exitBtn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
         exitBtn.setFocusPainted(false);
         exitBtn.setBorderPainted(false);
@@ -113,33 +119,109 @@ public class AdminSidebar extends JPanel {
         add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private JToggleButton createNavButton(String text, String cardName, boolean selected) {
-        JToggleButton btn = new JToggleButton(text, selected);
-        btn.setMaximumSize(new Dimension(222, 42));
-        btn.setPreferredSize(new Dimension(222, 42));
-        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 12f));
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBorder(new EmptyBorder(0, 16, 0, 16));
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    private JToggleButton createNavButton(String text, String cardName, boolean selected, JPanel navList) {
+        JToggleButton btn = new JToggleButton(text, selected) {
+            private static final long serialVersionUID = 1L;
+            private boolean hovered = false;
+            {
+                addMouseListener(new java.awt.event.MouseAdapter() {
+                    @Override
+                    public void mouseEntered(java.awt.event.MouseEvent e) {
+                        hovered = true;
+                        repaint();
+                    }
+                    @Override
+                    public void mouseExited(java.awt.event.MouseEvent e) {
+                        hovered = false;
+                        repaint();
+                    }
+                });
+            }
 
-        btn.putClientProperty("JButton.arc", 999);
-        btn.putClientProperty(FlatClientProperties.STYLE,
-                "background: #FFFFFF; " +
-                "hoverBackground: #F1F5F9; " +
-                "selectedBackground: #EFF6FF; " +
-                "selectedForeground: #0284C7; " +
-                "foreground: #475569;");
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                if (isSelected()) {
+                    // Pill-shaped active bg color: Apple Sky Blue / Admin Accent (#0284C7)
+                    g2.setColor(hovered ? new Color(3, 105, 161) : new Color(2, 132, 199));
+                    g2.fillRoundRect(0, 0, w, h, h, h);
+
+                    g2.setColor(Color.WHITE);
+                } else if (hovered) {
+                    // Hover pill
+                    g2.setColor(new Color(241, 245, 249)); // #F1F5F9
+                    g2.fillRoundRect(0, 0, w, h, h, h);
+
+                    g2.setColor(new Color(15, 23, 42)); // #0F172A
+                } else {
+                    g2.setColor(new Color(71, 85, 105)); // #475569 muted slate
+                }
+
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int textX = 20;
+                int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), textX, textY);
+
+                g2.dispose();
+            }
+        };
+
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        btn.setPreferredSize(new Dimension(200, 44));
+        btn.setFont(AssetManager.getFont("Roboto", Font.BOLD, 14f));
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         btn.addActionListener(e -> {
             if (onNavigate != null) {
                 onNavigate.accept(cardName);
             }
+            navList.repaint();
         });
 
         navGroup.add(btn);
         navButtons.put(cardName, btn);
         return btn;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int w = getWidth();
+        int h = getHeight();
+        int arc = 40;
+
+        int cardX = 4;
+        int cardY = 2;
+        int cardW = w - 8;
+        int cardH = h - 8;
+
+        // Multi-tier soft ambient shadow (Apple-style elevation)
+        g2.setColor(new Color(15, 23, 42, 6)); // Ambient soft spread
+        g2.fillRoundRect(cardX - 1, cardY + 6, cardW + 2, cardH - 2, arc + 2, arc + 2);
+        g2.setColor(new Color(15, 23, 42, 10)); // Mid soft shadow
+        g2.fillRoundRect(cardX, cardY + 3, cardW, cardH - 1, arc, arc);
+        g2.setColor(new Color(15, 23, 42, 16)); // Contact shadow
+        g2.fillRoundRect(cardX, cardY + 1, cardW, cardH, arc, arc);
+
+        // Crisp pure white card surface
+        g2.setColor(Color.WHITE);
+        g2.fillRoundRect(cardX, cardY, cardW, cardH, arc, arc);
+
+        g2.dispose();
+        super.paintComponent(g);
     }
 
     public void updateOperatorName() {
@@ -152,6 +234,7 @@ public class AdminSidebar extends JPanel {
         JToggleButton btn = navButtons.get(cardName);
         if (btn != null) {
             btn.setSelected(true);
+            repaint();
         }
     }
 }

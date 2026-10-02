@@ -100,8 +100,8 @@ MainFrame
 │   ├── TrainsPageView (SearchCapsulePanel header, Route summary chips, TrainResultCard list)
 │   └── MyBookingsPageView (Guest prompt cards, BookingTicketCard list)
 └── AdminDashboardView (Embedded Full-Window Admin Mode)
-    ├── AdminSidebar (Bebas Neue header, 5-pill navigation group, operator badge, exit pill)
-    ├── AdminTopBar (1s live clock, HikariCP telemetry pill, sign-out button)
-    └── CardLayout (Overview with AdminStatCards, Fleet, Stations, Manifests, Health)
+    ├── AdminSidebar (Floating Apple-style panel, 28px corners, soft shadow, 14pt pills: Overview, Fleet, Stations, Bookings, Destinations, Health)
+    ├── AdminTopBar (1s live clock, top window clearance, draggable title bar caption)
+    └── CardLayout (Overview with AdminStatCards, Fleet, Stations, Bookings, Destinations, Health)
 ```
 

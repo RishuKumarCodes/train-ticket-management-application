@@ -13,8 +13,8 @@
     <description>Modern Java Swing Desktop Application with Jelly/Fluid Animations and JDBC persistence</description>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <flatlaf.version>3.5.4</flatlaf.version>
         <hikaricp.version>5.1.0</hikaricp.version>
@@ -24,6 +24,7 @@
         <logback.version>1.5.8</logback.version>
         <junit.version>5.10.3</junit.version>
         <javafx.version>17.0.12</javafx.version>
+        <exec.mainClass>com.trainticket.Main</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -127,7 +128,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <release>17</release>
+                    <release>21</release>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                 </configuration>
@@ -139,8 +140,24 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.4.1</version>
                 <configuration>
-                    <mainClass>com.trainticket.Main</mainClass>
+                    <!-- Used by: mvn exec:java -->
+                    <mainClass>${exec.mainClass}</mainClass>
                 </configuration>
+                <executions>
+                    <!-- Used by: mvn exec:exec  (forks a compatible JVM) -->
+                    <execution>
+                        <id>run-forked</id>
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <executable>${java.home}/bin/java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>${exec.mainClass}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Assembly Plugin to create executable Fat JAR -->

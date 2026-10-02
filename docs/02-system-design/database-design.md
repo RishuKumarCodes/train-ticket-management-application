@@ -60,6 +60,7 @@ erDiagram
         BIGINT dest_station_id FK "References stations(id)"
         VARCHAR runs_on_days "7-char bitmask for Mon-Sun ('1111111')"
         ENUM status "ON_TIME, DEPARTED, DELAYED, CANCELLED"
+        INT delay_minutes "Live operational delay in minutes"
     }
 
     TRAIN_ROUTES {
@@ -72,6 +73,7 @@ erDiagram
         INT halt_minutes "Stop duration in minutes"
         INT distance_km "Cumulative km from origin"
         INT day_count "Journey day counter (1, 2...)"
+        INT platform_number "Designated platform track number"
     }
 
     TRAIN_CLASSES {
@@ -111,13 +113,37 @@ erDiagram
         VARCHAR status "CONFIRMED, CANCELLED"
     }
 
+    SAVED_PASSENGERS {
+        BIGINT id PK "Auto Increment"
+        BIGINT user_id FK "References users(id)"
+        VARCHAR full_name "Traveler legal full name"
+        INT age "Traveler age"
+        VARCHAR gender "Traveler gender (Male, Female, Other)"
+        VARCHAR berth_preference "LOWER, MIDDLE, UPPER, SIDE_LOWER, SIDE_UPPER, NO_PREFERENCE"
+        BOOLEAN senior_citizen "Senior citizen concession entitlement flag"
+        TIMESTAMP created_at "Creation timestamp"
+    }
+
+    FEATURED_DESTINATIONS {
+        BIGINT id PK "Auto Increment"
+        VARCHAR monument_name "Monument or scenic title"
+        VARCHAR location_text "Geographic location string"
+        VARCHAR station_code "Mapped nearest station code"
+        VARCHAR image_path "Asset path to scenic photography"
+        VARCHAR layout_style "staircase, center, left, right"
+        INT display_order "Sorting order priority"
+        TIMESTAMP created_at "Creation timestamp"
+    }
+
     STATIONS ||--o{ TRAINS : "origin/dest"
     TRAINS ||--|{ TRAIN_ROUTES : "halts"
     STATIONS ||--o{ TRAIN_ROUTES : "located at"
     TRAINS ||--|{ TRAIN_CLASSES : "has seating inventory"
     USERS ||--o{ BOOKINGS : "places"
+    USERS ||--o{ SAVED_PASSENGERS : "manages frequent travelers"
     TRAINS ||--o{ BOOKINGS : "reserved for"
     BOOKINGS ||--|{ BOOKING_PASSENGERS : "contains travelers"
+    STATIONS ||--o{ FEATURED_DESTINATIONS : "connects to"
 ```
 
 ---
@@ -159,6 +185,7 @@ erDiagram
 | `dest_station_id` | `BIGINT` | No | FK | None | Terminus station reference |
 | `runs_on_days` | `VARCHAR(7)` | No | - | `'1111111'` | Active run schedule bitmask (Mon..Sun) |
 | `status` | `ENUM` | No | - | `'ON_TIME'` | `ON_TIME`, `DEPARTED`, `DELAYED`, `CANCELLED` |
+| `delay_minutes` | `INT` | No | - | `0` | Real-time operational delay in minutes (0 if on-time) |
 
 ### 4.4 Table: `train_routes`
 | Column | Type | Nullable | Key | Default | Description |
@@ -172,6 +199,7 @@ erDiagram
 | `halt_minutes` | `INT` | No | - | `0` | Halt duration in minutes |
 | `distance_km` | `INT` | No | - | `0` | Cumulative rail distance from origin |
 | `day_count` | `INT` | No | - | `1` | Journey day counter |
+| `platform_number`| `INT` | No | - | `1` | Assigned platform track number at the station |
 
 ### 4.5 Table: `train_classes`
 | Column | Type | Nullable | Key | Default | Description |
@@ -213,6 +241,30 @@ erDiagram
 | `berth_type` | `VARCHAR(20)` | No | - | None | Berth preference (`LOWER`, `MIDDLE`, `UPPER`, `SIDE_LOWER`, etc.) |
 | `status` | `VARCHAR(20)` | No | - | `'CONFIRMED'`| Traveler seat status |
 
+### 4.8 Table: `saved_passengers`
+| Column | Type | Nullable | Key | Default | Description |
+|---|---|---|---|---|---|
+| `id` | `BIGINT` | No | PK | `AUTO_INCREMENT` | Saved frequent passenger record ID |
+| `user_id` | `BIGINT` | No | FK | None | Parent account holder (`users.id`) |
+| `full_name` | `VARCHAR(100)` | No | - | None | Legal name of saved traveler |
+| `age` | `INT` | No | - | None | Traveler age |
+| `gender` | `VARCHAR(10)` | No | - | None | Gender (`Male`, `Female`, `Other`) |
+| `berth_preference`| `VARCHAR(20)`| No| - | `'NO_PREFERENCE'` | Preferred berth allocation |
+| `senior_citizen`| `BOOLEAN` | No | - | `FALSE` | Senior citizen entitlement flag |
+| `created_at` | `TIMESTAMP` | No | - | `CURRENT_TIMESTAMP` | Record creation timestamp |
+
+### 4.9 Table: `featured_destinations`
+| Column | Type | Nullable | Key | Default | Description |
+|---|---|---|---|---|---|
+| `id` | `BIGINT` | No | PK | `AUTO_INCREMENT` | Unique identifier for featured destination |
+| `monument_name` | `VARCHAR(100)` | No | - | None | Monument or iconic destination title |
+| `location_text` | `VARCHAR(150)` | No | - | None | Geographic location text (e.g. `Agra, Uttar Pradesh`) |
+| `station_code` | `VARCHAR(10)` | No | - | None | Nearest railway station code mapped for trip search (e.g. `AGC`) |
+| `image_path` | `VARCHAR(255)` | No | - | None | Path to high-resolution photography asset |
+| `layout_style` | `VARCHAR(50)` | Yes | - | `''` | Typographic card title style (`staircase`, `center`, `left`, `right`) |
+| `display_order` | `INT` | Yes | - | `0` | Sequence priority for display |
+| `created_at` | `TIMESTAMP` | No | - | `CURRENT_TIMESTAMP` | Record creation timestamp |
+
 ---
 
 ## 5. Master Database Seeding & Maintenance Utilities
@@ -233,39 +285,33 @@ RailFlow provides automated zero-configuration database seeding via both GUI/she
    - `RailFlow.command`: Double-click in Finder; choose option `[2]` or let option `[1]` launch the desktop application automatically after 4 seconds.
 
 3. **Seeded Data Portfolio & Master Database Scripts**:
-   - **SQL Seeding Scripts**:
-     - `src/main/resources/db/seed_data.sql`: Standalone master SQL script for importing full DDL/DML into any MySQL / MariaDB instance.
-     - `src/main/resources/db/schema.sql`: Embedded schema parsed dynamically on startup or via `DatabaseSeeder`.
+   - **Canonical Master SQL Script**:
+     - `src/main/resources/db/schema.sql`: Single canonical DDL/DML script defining all relational tables, constraints, indices, and comprehensive seed data (101 trains, 50 stations, 420+ halts, 250+ coach inventories, users, and saved passengers).
    - **Stations (50 Master Stations)**: Nationwide coverage across all 6 Indian Railway zones:
      - *North*: New Delhi (`NDLS`), Old Delhi (`DLI`), Hazrat Nizamuddin (`NZM`), Anand Vihar (`ANVT`), Chandigarh (`CDG`), Amritsar (`ASR`), Jammu Tawi (`JAT`), Varanasi (`BSB`), Kanpur Central (`CNB`), Prayagraj (`PRYJ`), Pt. Deen Dayal Upadhyaya (`DDU`), Lucknow Charbagh (`LKO`), Ghaziabad (`GZB`), Aligarh (`ALJN`), Agra Cantt (`AGC`), Gwalior (`GWL`), Gorakhpur (`GKP`).
      - *West*: Mumbai Central (`MMCT`), Chhatrapati Shivaji Maharaj Terminus (`CSMT`), Bandra Terminus (`BDTS`), Pune (`PUNE`), Ahmedabad (`ADI`), Surat (`ST`), Vadodara (`BRC`), Kota (`KOTA`), Jaipur (`JP`), Nagpur (`NGP`), Bhopal Habibganj / RKMP (`BPL`).
      - *South*: Chennai Central (`MAS`), Bengaluru City / KSR (`SBC`), Yesvantpur (`YPR`), Mysuru (`MYS`), Hyderabad Deccan (`HYB`), Secunderabad (`SC`), Vijayawada (`BZA`), Katpadi (`KPD`), Coimbatore (`CBE`), Madurai (`MDU`), Thiruvananthapuram Central (`TVC`), Ernakulam (`ERS`), Kozhikode (`CLT`).
      - *East*: Howrah (`HWH`), Sealdah (`SDAH`), Patna (`PNBE`), Bhubaneswar (`BBS`), Puri (`PURI`), Ranchi (`RNC`).
      - *Central & Northeast*: Raipur (`R`), Guwahati (`GHY`), Dibrugarh (`DBRG`).
-   - **Train Fleet (22 Iconic Trains)**:
-     - `12952`: New Delhi Tejas Rajdhani Express (NDLS ➔ MMCT)
-     - `12954`: August Kranti Tejas Rajdhani Express (NDLS ➔ MMCT)
-     - `22436`: Vande Bharat Express (NDLS ➔ BSB)
-     - `12004`: Lucknow Swarna Shatabdi Express (NDLS ➔ LKO)
-     - `12302`: Howrah Rajdhani Express (NDLS ➔ HWH)
-     - `20607`: Vande Bharat Express (MAS ➔ MYS)
-     - `12007`: Shatabdi Express (MAS ➔ MYS)
-     - `12626`: Kerala Superfast Express (NDLS ➔ TVC via AGC, GWL, BPL, NGP, BZA, KPD, CBE, ERS)
-     - `12138`: Punjab Mail (ASR ➔ CSMT via NDLS, AGC, GWL, BPL, BSL, MMR)
-     - `12002`: New Delhi Shatabdi Express (NDLS ➔ BPL via AGC, GWL)
-     - `22439`: Vande Bharat Express (NDLS ➔ JAT)
-     - `12394`: Sampoorna Kranti Express (NDLS ➔ PNBE via CNB, DDU)
-     - `12424`: Dibrugarh Rajdhani Express (NDLS ➔ DBRG via CNB, DDU, PNBE, GHY)
-     - `12724`: Telangana Express (NDLS ➔ SC via AGC, GWL, BPL, NGP, KZJ)
-     - `12622`: Tamil Nadu Express (NDLS ➔ MAS via AGC, GWL, BPL, NGP, BZA)
-     - `12628`: Karnataka Express (NDLS ➔ SBC via AGC, GWL, BPL, NGP)
-     - `12260`: Sealdah Duronto Express (NDLS ➔ SDAH via CNB, DDU)
-     - `12802`: Purushottam Express (NDLS ➔ PURI via CNB, PRYJ, DDU, BBS)
-     - `12951`: Mumbai Tejas Rajdhani Express (MMCT ➔ NDLS via ST, BRC, KOTA)
-     - `12301`: Howrah New Delhi Rajdhani Express (HWH ➔ NDLS via DDU, PRYJ, CNB)
-     - `22435`: Vande Bharat Express (BSB ➔ NDLS via PRYJ, CNB)
-     - `20608`: Vande Bharat Express (MYS ➔ MAS via SBC, KPD)
-   - **Halts & Inventory**: 110+ halt stop sequence records, 85+ coach class availability records with dynamic quota & concession pricing.
+   - **Train Fleet (101 Iconic Indian Trains across 17 Major Corridors)**:
+     - *Delhi ➔ Mumbai Corridor*: 12952 Tejas Rajdhani, 12954 August Kranti Rajdhani, 12926 Paschim Superfast, 12910 Bandra Garib Rath, 12904 Golden Temple Mail, 22222 Mumbai CSMT Rajdhani, and reverse fleet (12951, 12953, 12925, 12909, 22221).
+     - *Delhi ➔ Varanasi Corridor*: 22436 Vande Bharat (Morning), 22416 Vande Bharat (Evening), 12560 Shiv Ganga Superfast, 12582 Banaras Superfast, 15128 Kashi Vishwanath Express, and reverse fleet (22435, 22415, 12559).
+     - *Delhi ➔ Lucknow Corridor*: 12004 Lucknow Swarna Shatabdi, 82502 IRCTC Tejas Express, 12230 Lucknow Mail, 12430 AC Superfast, 12420 Gomti Express, and reverse fleet (12003, 82501, 12229).
+     - *Delhi ➔ Kolkata / Howrah Corridor*: 12302 Howrah Rajdhani (via Gaya), 12306 Howrah Rajdhani (via Patna), 12304 Poorva Superfast, 12314 Sealdah Rajdhani, 12312 Netaji Express, and reverse fleet (12301, 12303).
+     - *Delhi ➔ Jaipur Corridor*: 12015 Ajmer Shatabdi, 20978 Delhi-Ajmer Vande Bharat, 12986 Double Decker Express, 12958 Swarna Jayanti Rajdhani, 14660 Mandore Express, and reverse fleet (12016, 20977, 12985).
+     - *Chennai ➔ Bengaluru & Mysuru*: 20608 Vande Bharat, 12007 Shatabdi Express, 20664 Vande Bharat (Evening), 12027 Shatabdi, 12657 Chennai Mail, 12609 Mysuru Express, and reverse fleet (20607, 12008, 12658).
+     - *Mumbai ➔ Ahmedabad Corridor*: 20901 Gandhinagar Vande Bharat, 12009 Shatabdi Express, 12931 Double Decker, 12901 Gujarat Mail, 22953 Gujarat Superfast, and reverse fleet (20902, 12010, 12932, 12902).
+     - *Mumbai ➔ Goa Corridor*: 22229 Madgaon Vande Bharat, 12051 Jan Shatabdi, 10103 Mandovi Express, 12133 Mangaluru Superfast, and reverse fleet (22230, 12052).
+     - *Delhi ➔ Patna Corridor*: 12394 Sampoorna Kranti Superfast, 12424 Dibrugarh Rajdhani, 12392 Shramjeevi Superfast, 12566 Bihar Sampark Kranti, and reverse fleet (12393, 12423).
+     - *Delhi ➔ Chandigarh & Amritsar*: 12046 Chandigarh Shatabdi, 12011 Kalka Shatabdi, 12005 Kalka Shatabdi (Evening), 22447 Vande Bharat, 12029 Swarna Shatabdi, 12497 Shan-e-Punjab, and reverse fleet (12045, 12012).
+     - *Delhi ➔ Jammu Tawi Corridor*: 22439 Katra Vande Bharat, 12425 Jammu Tawi Rajdhani, 12445 Uttar Sampark Kranti, and reverse fleet (22440, 12426).
+     - *Delhi ➔ Bhopal & Central India*: 20172 Rani Kamlapati Vande Bharat, 12002 Bhopal Shatabdi, 12920 Malwa Superfast, and reverse fleet (20171, 12001).
+     - *Kolkata ➔ Bhubaneswar & Puri*: 22895 Puri Vande Bharat, 12837 Puri Superfast, 12277 Puri Shatabdi, 12821 Dhauli Superfast, and reverse fleet (22896, 12838).
+     - *Delhi ➔ Hyderabad / Secunderabad*: 12724 Telangana Superfast, 12438 Secunderabad Rajdhani.
+     - *Delhi ➔ Chennai Central*: 12616 Grand Trunk (GT) Express, 12622 Tamil Nadu Superfast.
+     - *Delhi ➔ Kerala (TVC)*: 12626 Kerala Superfast Express, and reverse 12625.
+     - *Amritsar ➔ Mumbai (ASR ➔ CSMT)*: 12138 Punjab Mail Express, and reverse 12137.
+   - **Halts & Inventory**: 420+ halt stop sequence records, 250+ coach class availability records with dynamic quota & concession pricing.
    - **Fixed Admin Seed**: `admin` / `admin` (Station Master dispatch account).
    - **Fixed Demo Passenger**: `passenger1` / `password123` (`passenger1@example.com`).
 

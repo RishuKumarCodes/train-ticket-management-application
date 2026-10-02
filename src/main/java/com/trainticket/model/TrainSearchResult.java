@@ -36,6 +36,10 @@ public final class TrainSearchResult {
         return originHalt;
     }
 
+    public RouteHalt getBoardingHalt() {
+        return originHalt;
+    }
+
     public RouteHalt getDestinationHalt() {
         return destinationHalt;
     }

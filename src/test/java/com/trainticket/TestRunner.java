@@ -28,9 +28,15 @@ public class TestRunner {
             testClasses.add(com.trainticket.service.AuthServiceTest.class);
             testClasses.add(com.trainticket.service.TrainSearchServiceTest.class);
             testClasses.add(com.trainticket.service.BookingServiceTest.class);
+            testClasses.add(com.trainticket.service.SeatAndPaymentTest.class);
+            testClasses.add(com.trainticket.service.AdminFleetAndTicketPassTest.class);
             testClasses.add(com.trainticket.model.ModelEntitiesTest.class);
             testClasses.add(com.trainticket.model.dao.DaoAndSessionTest.class);
             testClasses.add(com.trainticket.util.DatabaseSeederTest.class);
+            testClasses.add(com.trainticket.view.ResponsiveCardGridLayoutTest.class);
+            testClasses.add(com.trainticket.service.FeaturedDestinationFlowTest.class);
+            testClasses.add(com.trainticket.service.CancellationRefundTest.class);
+            testClasses.add(com.trainticket.view.AdminAnalyticsOverviewTest.class);
         }
 
         int totalPassed = 0;
@@ -42,6 +48,19 @@ public class TestRunner {
 
         for (Class<?> testClass : testClasses) {
             System.out.println("\nRunning: " + testClass.getSimpleName());
+
+            // Invoke @BeforeAll static lifecycle methods if present
+            for (Method bam : testClass.getDeclaredMethods()) {
+                if (bam.isAnnotationPresent(org.junit.jupiter.api.BeforeAll.class)) {
+                    try {
+                        bam.setAccessible(true);
+                        bam.invoke(null);
+                    } catch (Exception ex) {
+                        System.err.println("BeforeAll failed on " + testClass.getSimpleName() + ": " + ex.getMessage());
+                    }
+                }
+            }
+
             Object instance;
             try {
                 instance = testClass.getDeclaredConstructor().newInstance();

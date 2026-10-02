@@ -46,8 +46,8 @@ docs/
 ├── 02-system-design/                      # PHASE 2: System Design (HLD & LLD)
 │   ├── high-level-architecture.md         # 3-tier MVC, EDT threading model & subsystem architecture
 │   ├── database-design.md                 # ERD, 3NF relational normalization & data dictionary
-│   ├── sql-tables-reference.md            # Complete 7-table schema, data dictionary & DDL definitions
-│   └── ui-ux-design-system.md             # 24px/pill geometry, Apple jelly spring physics & dark theme
+│   ├── sql-tables-reference.md            # Complete 8-table schema, data dictionary & DDL definitions
+│   └── ui-ux-design-system.md             # 50px card geometry, Apple jelly spring physics & Universal Light Theme
 │
 ├── 03-implementation/                     # PHASE 3: Coding & Package Architecture
 │   ├── module-specifications.md           # Model, View, Controller, Util package responsibilities

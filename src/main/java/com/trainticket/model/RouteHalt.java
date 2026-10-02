@@ -18,9 +18,16 @@ public final class RouteHalt {
     private final int haltMinutes;
     private final int distanceKm;
     private final int dayCount;
+    private final String platformNumber;
 
     public RouteHalt(int stopSequence, Station station, LocalTime arrivalTime, 
                      LocalTime departureTime, int haltMinutes, int distanceKm, int dayCount) {
+        this(stopSequence, station, arrivalTime, departureTime, haltMinutes, distanceKm, dayCount, 
+             String.valueOf(((stopSequence * 3 + station.getCode().hashCode()) & 0x7FFFFFFF) % 12 + 1));
+    }
+
+    public RouteHalt(int stopSequence, Station station, LocalTime arrivalTime, 
+                     LocalTime departureTime, int haltMinutes, int distanceKm, int dayCount, String platformNumber) {
         this.stopSequence = stopSequence;
         this.station = Objects.requireNonNull(station, "Halt station cannot be null");
         this.arrivalTime = arrivalTime;
@@ -28,6 +35,11 @@ public final class RouteHalt {
         this.haltMinutes = haltMinutes;
         this.distanceKm = distanceKm;
         this.dayCount = dayCount;
+        this.platformNumber = (platformNumber != null && !platformNumber.isBlank()) ? platformNumber.trim() : "1";
+    }
+
+    public String getPlatformNumber() {
+        return platformNumber;
     }
 
     public int getStopSequence() {

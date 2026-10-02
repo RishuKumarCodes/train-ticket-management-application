@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.trainticket.model.Booking;
 import com.trainticket.model.service.BookingService;
 import com.trainticket.util.AssetManager;
+import com.trainticket.view.dialog.CancelTicketModalDialog;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -112,39 +113,25 @@ public class BookingTicketCard extends JPanel {
         if (!isCancelled) {
             JButton cancelBtn = createPillButton("CANCEL TICKET", new Color(241, 245, 249), new Color(239, 68, 68),
                     () -> {
-                        int confirm = JOptionPane.showConfirmDialog(
-                                this,
-                                "Are you sure you wish to cancel booking PNR " + booking.getPnr()
-                                        + "?\nSeat reservation will be released.",
-                                "Cancel Ticket Confirmation",
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.WARNING_MESSAGE);
-                        if (confirm == JOptionPane.YES_OPTION) {
-                            BookingService.getInstance().cancelBooking(booking.getPnr());
-                            if (onStatusChanged != null) {
-                                onStatusChanged.run();
-                            }
-                        }
+                        CancelTicketModalDialog dialog = new CancelTicketModalDialog(
+                                javax.swing.SwingUtilities.getWindowAncestor(this),
+                                booking,
+                                () -> {
+                                    if (onStatusChanged != null) {
+                                        onStatusChanged.run();
+                                    }
+                                }
+                        );
+                        dialog.setVisible(true);
                     });
             cancelBtn.setPreferredSize(new Dimension(130, 36));
             actions.add(cancelBtn);
         }
 
         JButton viewTicketBtn = createPillButton("VIEW E-TICKET", new Color(15, 23, 42), Color.WHITE, () -> {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "RAILFLOW DIGITAL PASS\n" +
-                            "────────────────────────────────\n" +
-                            "PNR: " + booking.getPnr() + "\n" +
-                            "Train: " + booking.getTrainNumber() + " " + booking.getTrainName() + "\n" +
-                            "Date: " + booking.getJourneyDate() + "\n" +
-                            "Route: " + booking.getFromStationCode() + " ➔ " + booking.getToStationCode() + "\n" +
-                            "Status: " + booking.getStatus() + "\n" +
-                            "Total Fare: ₹" + String.format("%,.0f", booking.getTotalFare()) + "\n" +
-                            "────────────────────────────────\n" +
-                            "Have a safe and pleasant journey!",
-                    "RailFlow E-Ticket",
-                    JOptionPane.INFORMATION_MESSAGE);
+            com.trainticket.view.dialog.ETicketPassDialog passDialog = 
+                    new com.trainticket.view.dialog.ETicketPassDialog(javax.swing.SwingUtilities.getWindowAncestor(this), booking);
+            passDialog.setVisible(true);
         });
         viewTicketBtn.setPreferredSize(new Dimension(130, 36));
         actions.add(viewTicketBtn);

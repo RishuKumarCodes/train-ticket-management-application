@@ -1,5 +1,6 @@
 package com.trainticket.view.component.home;
 
+import com.trainticket.model.FeaturedDestination;
 import com.trainticket.util.AssetManager;
 
 import javax.swing.JPanel;
@@ -37,6 +38,8 @@ public class DestinationImageCard extends JPanel {
     private final String locationText;  // Roboto — above image, bottom-left row
     private Image image;
     private boolean isHovered = false;
+    private FeaturedDestination destination;
+    private Runnable onClickAction;
 
     // 0.0 = resting, 1.0 = hovered — drives arrow color/rotation + location fade
     private float hoverProgress = 0.0f;
@@ -95,10 +98,20 @@ public class DestinationImageCard extends JPanel {
     }
 
     public DestinationImageCard(String imagePath, String monumentName, String layoutStyle, String locationText) {
+        this(imagePath, monumentName, layoutStyle, locationText, null);
+    }
+
+    public DestinationImageCard(FeaturedDestination destination, Runnable onClickAction) {
+        this(destination.getImagePath(), destination.getMonumentName(), destination.getLayoutStyle(), destination.getLocationText(), onClickAction);
+        this.destination = destination;
+    }
+
+    public DestinationImageCard(String imagePath, String monumentName, String layoutStyle, String locationText, Runnable onClickAction) {
         this.imagePath = imagePath;
         this.monumentName = monumentName;
         this.layoutStyle = layoutStyle;
         this.locationText = locationText;
+        this.onClickAction = onClickAction;
         this.image = AssetManager.getImage(imagePath);
         setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -117,7 +130,26 @@ public class DestinationImageCard extends JPanel {
                 isHovered = false;
                 startHover(false);
             }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (onClickAction != null) {
+                    onClickAction.run();
+                }
+            }
         });
+    }
+
+    public FeaturedDestination getFeaturedDestination() {
+        return destination;
+    }
+
+    public void setFeaturedDestination(FeaturedDestination destination) {
+        this.destination = destination;
+    }
+
+    public void setOnClickAction(Runnable onClickAction) {
+        this.onClickAction = onClickAction;
     }
 
     private long getCharTotalMs() {
@@ -187,13 +219,14 @@ public class DestinationImageCard extends JPanel {
         boolean rightAlign = "right".equals(layoutStyle);
         boolean leftAlign = "left".equals(layoutStyle);
         boolean isExempt = "STATUE\nOF\nUNITY".equals(monumentName) || "HAWA\nMAHAL".equals(monumentName);
+        float scale = Math.max(0.65f, Math.min(1.25f, cardW / 360f));
         float fontSize;
         if ("HAWA\nMAHAL".equals(monumentName)) {
-            fontSize = 76f;
+            fontSize = 76f * scale;
         } else if (isExempt) {
-            fontSize = multiLine ? 80f : 72f;
+            fontSize = (multiLine ? 80f : 72f) * scale;
         } else {
-            fontSize = multiLine ? 96f : 88f;
+            fontSize = (multiLine ? 96f : 88f) * scale;
         }
 
         Font font = AssetManager.getFont("Bebas Neue", Font.BOLD, fontSize);
@@ -202,15 +235,15 @@ public class DestinationImageCard extends JPanel {
             return null;
         }
 
-        int leftMargin = 28;
-        int rightMargin = "HAWA\nMAHAL".equals(monumentName) ? (cardW - 36) : (cardW - 28);
+        int leftMargin = Math.round(28 * scale);
+        int rightMargin = "HAWA\nMAHAL".equals(monumentName) ? (cardW - Math.round(36 * scale)) : (cardW - Math.round(28 * scale));
         float topOffset;
         if ("TAJ\nMAHAL".equals(monumentName) || "HAWA\nMAHAL".equals(monumentName)) {
-            topOffset = 36f;
+            topOffset = 36f * scale;
         } else if ("MUNNAR".equals(monumentName)) {
-            topOffset = 115f;
+            topOffset = 115f * scale;
         } else {
-            topOffset = 64f;
+            topOffset = 64f * scale;
         }
         float baseY = topOffset + fm.getAscent();
         int lineStep = (int) (fm.getAscent() * 1.04f); // decreased tight line spacing (~70px vs 90px)
@@ -442,8 +475,8 @@ public class DestinationImageCard extends JPanel {
         float slideY = 10f * (1f - ease); // starts 10px below, floats up to final pos
 
         // Arrow geometry — must match paintArrowButton exactly
-        int btnSize = 52;
-        int btnPad = 24;
+        int btnSize = cardW < 290 ? 44 : 52;
+        int btnPad = cardW < 290 ? 18 : 24;
         int rowCenterY = cardH - btnPad - btnSize / 2; // vertical center of arrow row
 
         // Apply vertical slide via Graphics2D transform
@@ -451,14 +484,14 @@ public class DestinationImageCard extends JPanel {
         g2.translate(0, slideY);
 
         // Subtle frosted pill backdrop
-        Font locFont = AssetManager.getFont("Roboto", Font.PLAIN, 13f);
+        Font locFont = AssetManager.getFont("Roboto", Font.PLAIN, cardW < 290 ? 11.5f : 13f);
         g2.setFont(locFont);
         FontMetrics fm = g2.getFontMetrics();
-        int dotDiameter = 8;
-        int dotTextGap = 6;
+        int dotDiameter = cardW < 290 ? 7 : 8;
+        int dotTextGap = cardW < 290 ? 5 : 6;
         int textW = fm.stringWidth(locationText);
-        int pillW = dotDiameter + dotTextGap + textW + 20;
-        int pillH = 28;
+        int pillW = dotDiameter + dotTextGap + textW + (cardW < 290 ? 16 : 20);
+        int pillH = cardW < 290 ? 25 : 28;
         int pillX = btnPad;
         int pillY = rowCenterY - pillH / 2;
         int pillArc = pillH;
@@ -488,8 +521,8 @@ public class DestinationImageCard extends JPanel {
      * hoverProgress (0→1): black→orange bg, 0°→-45° arrow rotation, white arrow.
      */
     private void paintArrowButton(Graphics2D g2, int cardW, int cardH) {
-        int btnSize = 52;
-        int btnPad = 24;
+        int btnSize = cardW < 290 ? 44 : 52;
+        int btnPad = cardW < 290 ? 18 : 24;
         int btnX = cardW - btnSize - btnPad;
         int btnY = cardH - btnSize - btnPad;
 
@@ -517,7 +550,7 @@ public class DestinationImageCard extends JPanel {
         ga.rotate(Math.toRadians(-45.0 * hoverProgress));
         ga.setColor(Color.WHITE);
         ga.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        int shaftHalf = 9, headArm = 7;
+        int shaftHalf = cardW < 290 ? 8 : 9, headArm = cardW < 290 ? 6 : 7;
         ga.drawLine(-shaftHalf, 0, shaftHalf, 0);
         Path2D.Float chevron = new Path2D.Float();
         chevron.moveTo(shaftHalf - headArm, -headArm);

@@ -151,6 +151,21 @@ public final class AssetManager {
         }
 
         return imageCache.computeIfAbsent(resourcePath, path -> {
+            // 1. Check if path points directly to an existing file on the filesystem
+            try {
+                java.io.File file = new java.io.File(path);
+                if (file.exists() && file.isFile()) {
+                    Image img = ImageIO.read(file);
+                    if (img != null) {
+                        logger.debug("Successfully loaded image from filesystem: {}", path);
+                        return img;
+                    }
+                }
+            } catch (Exception ex) {
+                logger.debug("Path {} is not a direct filesystem file: {}", path, ex.getMessage());
+            }
+
+            // 2. Classpath resource lookup
             String norm = path.startsWith("/") ? path : "/" + path;
             URL url = AssetManager.class.getResource(norm);
             if (url == null) {
@@ -158,7 +173,7 @@ public final class AssetManager {
                 url = AssetManager.class.getClassLoader().getResource(alt);
             }
             if (url == null) {
-                logger.warn("Asset not found on classpath: {}", path);
+                logger.warn("Asset not found on classpath or filesystem: {}", path);
                 return null;
             }
             try (InputStream in = url.openStream()) {
@@ -172,6 +187,15 @@ public final class AssetManager {
                 return null;
             }
         });
+    }
+
+    /**
+     * Evicts an image from the memory cache so any updated file on disk/classpath can be reloaded.
+     */
+    public static void evictImage(String resourcePath) {
+        if (resourcePath != null) {
+            imageCache.remove(resourcePath);
+        }
     }
 
     /**

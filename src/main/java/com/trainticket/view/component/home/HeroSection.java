@@ -50,13 +50,12 @@ public class HeroSection extends JPanel {
             return;
         }
 
-        // 1. Search Capsule — shifted lower with a larger bottom margin so the
-        //    title has more breathing room above and less dead space below.
+        // 1. Search Capsule — spacious horizontal margins with compact vertical footprint
         Dimension capSize = searchCapsule.getPreferredSize();
-        int capW = Math.min(capSize.width, w - 48);
+        int capW = Math.min(capSize.width, w - 160); // generous horizontal margin from edges
         int capH = capSize.height;
         int capX = (w - capW) / 2;
-        int bottomMargin = 72; // was 32 — shift capsule down toward the lower third
+        int bottomMargin = 56; // balanced for compact 106px 2-row search capsule
         int capY = h - capH - bottomMargin;
         searchCapsule.setBounds(capX, capY, capW, capH);
 
